@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"Default capabilities for Feature Hub","local":true,"windows":["main"],"permissions":["core:default","dialog:default","shell:default","fs:default","window-state:default"]}}

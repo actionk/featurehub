@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FeatureHub — Design v6</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --shell:   #090c17;
+  --app:     #0c1020;
+  --sidebar: #0a0d1a;
+  --panel:   #0f1424;
+  --card:    #131826;
+  --card-b:  #171d2e;
+  --raised:  #1c2338;
+  --hover:   #212840;
+  --input:   #0d1120;
+
+  --border:  rgba(255,255,255,0.06);
+  --borderM: rgba(255,255,255,0.10);
+  --borderS: rgba(255,255,255,0.16);
+
+  /* Text — t1 near-white, t2 readable secondary, t3 muted, t4 faint */
+  --t1: #eef0fc;
+  --t2: #b8c0d8;   /* FIX: was #8090b8, now readable default */
+  --t3: #525870;
+  --t4: #2d3452;
+
+  --g-blue:   #4d7cff;
+  --g-violet: #8b5cf6;
+  --g-pink:   #ec4899;
+  --g-cyan:   #22d3ee;
+  --g-green:  #34d399;
+  --g-amber:  #fbbf24;
+  --g-red:    #f87171;
+  --g-orange: #fb923c;
+
+  /* Gradients — 2-color max for text, 3-color ok for backgrounds */
+  --gp:  linear-gradient(135deg, #4d7cff, #8b5cf6);
+  --gh:  linear-gradient(135deg, #ec4899, #f97316);
+  --gc:  linear-gradient(135deg, #22d3ee, #4d7cff);
+  --gs:  linear-gradient(135deg, #34d399, #22d3ee);
+  --gw:  linear-gradient(135deg, #fbbf24, #f97316);
+  --gd:  linear-gradient(135deg, #f87171, #ec4899);
+
+  /* Glows */
+  --gl-blue:   rgba(77,124,255,0.25);
+  --gl-green:  rgba(52,211,153,0.3);
+  --gl-amber:  rgba(251,191,36,0.22);
+
+  --r-sm: 7px;
+  --r-md: 11px;
+  --r:    15px;
+  --r-lg: 20px;
+  --r-xl: 26px;
+  --r-f:  9999px;
+
+  --font:   'Space Grotesk', -apple-system, sans-serif;
+  --mono:   'JetBrains Mono', monospace;
+  --smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Consistent card hover — same for ALL cards */
+  --card-hover-y:      -2px;
+  --card-hover-shadow: 0 14px 40px rgba(0,0,0,0.38), 0 2px 8px rgba(0,0,0,0.18);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+  font-family: var(--font);
+  background: var(--shell);
+  color: var(--t1);
+  font-size: 13.5px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  height: 100%; overflow: hidden;
+}
+
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 2px; }
+::selection { background: rgba(77,124,255,0.3); }
+
+/* ── Focus ring — keyboard nav matters for devs ── */
+:focus-visible {
+  outline: 2px solid rgba(77,124,255,0.6);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+button:focus-visible { outline-offset: 1px; }
+
+/* ── Gradient text utility ── */
+.gt {
+  display: inline-block;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gt-p { background-image: var(--gp); }
+.gt-h { background-image: var(--gh); }
+.gt-c { background-image: var(--gc); }
+.gt-s { background-image: var(--gs); }
+.gt-w { background-image: var(--gw); }
+
+/* ════════════════════════════
+   SHELL BACKGROUND
+   ════════════════════════════ */
+.shell-fx {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0; overflow: hidden;
+}
+.shell-fx::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 75% -5%,  rgba(77,124,255,0.08)  0%, transparent 55%),
+    radial-gradient(ellipse 50% 45% at 5%  80%,  rgba(139,92,246,0.06)  0%, transparent 50%),
+    radial-gradient(ellipse 35% 35% at 95% 95%,  rgba(34,211,238,0.04)  0%, transparent 50%);
+}
+.ray {
+  position: absolute; inset: 0; opacity: 0.02;
+  background:
+    linear-gradient(122deg, transparent 28%, rgba(77,124,255,1) 46%, transparent 50%),
+    linear-gradient(122deg, transparent 52%, rgba(139,92,246,0.7) 64%, transparent 68%);
+  animation: ray-d 24s ease-in-out infinite alternate;
+}
+@keyframes ray-d {
+  from { transform: translateX(-12px) rotate(-0.2deg); }
+  to   { transform: translateX(12px)  rotate( 0.2deg); }
+}
+
+/* ════════════════════════════
+   APP FRAME
+   ════════════════════════════ */
+.app-win {
+  position: relative; z-index: 1;
+  height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+
+.app-frame {
+  width: 100%; height: 100%;
+  background: var(--app);
+  border-radius: var(--r-xl);
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--app), var(--app)),
+    linear-gradient(135deg,
+      rgba(77,124,255,0.28) 0%,
+      rgba(139,92,246,0.18) 40%,
+      rgba(34,211,238,0.10) 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 48px 120px rgba(0,0,0,0.75);
+  display: flex; overflow: hidden;
+}
+
+/* ════════════════════════════
+   ICON SIDEBAR + TOOLTIPS
+   ════════════════════════════ */
+.icon-bar {
+  width: 60px; min-width: 60px;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 16px 0; gap: 3px;
+  user-select: none;
+}
+
+.logo {
+  width: 34px; height: 34px;
+  background: var(--gp);
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  letter-spacing: -0.06em;
+  box-shadow: 0 4px 18px var(--gl-blue), 0 0 0 1px rgba(255,255,255,0.1) inset;
+  margin-bottom: 14px; flex-shrink: 0;
+}
+
+/* Tooltip system for icon-only sidebar */
+.nav-ic {
+  width: 38px; height: 38px;
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+  color: var(--t3);
+  border: none; background: none;
+  font-size: 15px;
+  position: relative;
+}
+
+.nav-ic::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) scale(0.9);
+  background: var(--raised);
+  border: 1px solid var(--borderM);
+  color: var(--t1);
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: var(--r-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s, transform 0.12s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  z-index: 100;
+}
+
+/* Tooltip arrow */
+.nav-ic::before {
+  content: '';
+  position: absolute;
+  left: calc(100% + 5px);
+  top: 50%; transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: var(--raised);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+  z-index: 100;
+}
+
+.nav-ic:hover::after,
+.nav-ic:hover::before { opacity: 1; transform: translateY(-50%) scale(1); }
+
+/* Shortcut hint inside tooltip */
+.nav-ic[data-key]::after {
+  content: attr(data-tip) "  " attr(data-key);
+}
+
+.nav-ic:hover { background: var(--hover); color: var(--t2); }
+
+.nav-ic.on {
+  background: linear-gradient(135deg, rgba(77,124,255,0.18), rgba(139,92,246,0.11));
+  color: #8b9fff;
+  border: 1px solid rgba(77,124,255,0.2);
+  box-shadow: 0 0 14px rgba(77,124,255,0.1);
+}
+
+.nav-sep {
+  width: 28px; height: 1px;
+  background: var(--border);
+  margin: 6px 0;
+}
+
+.nav-spacer { flex: 1; }
+
+/* ════════════════════════════
+   FEATURE PANEL
+   ════════════════════════════ */
+.feat-panel {
+  width: 240px; min-width: 240px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  user-select: none;
+}
+
+.fp-hd { padding: 18px 15px 10px; }
+
+.fp-title {
+  font-size: 17px; font-weight: 700; letter-spacing: -0.03em;
+  margin-bottom: 11px;
+}
+
+.fp-search {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px;
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: var(--r-f);
+  color: var(--t3); font-size: 12px;
+  cursor: pointer; transition: all 0.14s;
+  font-family: var(--font);
+}
+.fp-search:hover { border-color: var(--borderM); color: var(--t2); }
+.fp-search kbd {
+  margin-left: auto; font-family: var(--mono); font-size: 9.5px;
+  color: var(--t4); background: rgba(255,255,255,0.04);
+  padding: 1px 6px; border-radius: var(--r-f); border: 1px solid var(--border);
+}
+
+.fp-filters { display: flex; gap: 4px; padding: 0 15px 10px; }
+.fpill {
+  font-size: 11px; font-weight: 500; padding: 3px 11px;
+  border-radius: var(--r-f); background: transparent; color: var(--t3);
+  border: 1px solid transparent; cursor: pointer; transition: all 0.12s;
+  font-family: var(--font);
+}
+.fpill:hover { background: var(--hover); color: var(--t2); border-color: var(--border); }
+.fpill.on {
+  background: linear-gradient(135deg, rgba(77,124,255,0.16), rgba(139,92,246,0.10));
+  color: #8b9fff; border-color: rgba(77,124,255,0.22); font-weight: 600;
+}
+
+.feat-list { flex: 1; overflow-y: auto; padding: 0 9px; }
+
+.grp-lbl {
+  font-size: 9px; font-weight: 700; color: var(--t4);
+  padding: 10px 8px 4px; letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+/* Feature item — left border shows status color */
+.fitem {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: var(--r-md);
+  cursor: pointer; transition: background 0.1s, border-color 0.1s;
+  margin-bottom: 1px; border-left: 2px solid transparent;
+}
+.fitem:hover { background: var(--hover); }
+.fitem:hover .fname { color: var(--t1); }
+.fitem.on {
+  background: linear-gradient(90deg, rgba(77,124,255,0.11), rgba(139,92,246,0.05));
+  border-left-color: var(--g-blue);
+}
+.fitem.on .fname { color: var(--t1); font-weight: 600; }
+
+/* Colored left-border on hover per status */
+.fitem.s-amber:hover  { border-left-color: var(--g-amber); }
+.fitem.s-green:hover  { border-left-color: var(--g-green); }
+.fitem.s-blue:hover   { border-left-color: var(--g-blue); }
+
+.fdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.fname {
+  font-size: 12.5px; font-weight: 500;
+  color: var(--t2);  /* brighter than before */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex: 1; transition: color 0.1s;
+}
+
+.fmeta { font-size: 9.5px; color: var(--t4); font-family: var(--mono); flex-shrink: 0; }
+
+/* Mini progress bar */
+.pmb { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.pmb-t { width: 26px; height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+.pmb-f { height: 100%; border-radius: 2px; }
+.pmb-n { font-size: 9px; font-family: var(--mono); color: var(--t4); }
+
+/* Empty state for feature list */
+.list-empty {
+  padding: 24px 16px; text-align: center;
+  color: var(--t4); font-size: 12px;
+}
+.list-empty-icon { font-size: 24px; margin-bottom: 8px; opacity: 0.4; }
+
+.fp-footer { padding: 12px; border-top: 1px solid var(--border); }
+
+.add-btn {
+  width: 100%; padding: 8px; border-radius: var(--r-f);
+  background: var(--gp); color: #fff;
+  font-size: 12px; font-weight: 700; border: none; cursor: pointer;
+  font-family: var(--font);
+  box-shadow: 0 4px 20px var(--gl-blue);
+  transition: all 0.16s var(--smooth);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.add-btn:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 7px 26px var(--gl-blue); }
+
+/* ════════════════════════════
+   MAIN PANEL
+   ════════════════════════════ */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.main-hd { padding: 20px 24px 0; flex-shrink: 0; }
+
+.title-row {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; margin-bottom: 10px; gap: 16px;
+}
+
+.feat-title { font-size: 24px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; }
+
+/* Breadcrumb / sub */
+.feat-sub {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11.5px; color: var(--t3); margin-top: 3px;
+}
+
+/* Ticket ID — mono, copyable feel */
+.ticket-id {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--t3); cursor: pointer;
+  padding: 1px 6px; border-radius: 4px;
+  border: 1px solid var(--border);
+  transition: all 0.12s;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.ticket-id:hover { border-color: var(--borderM); color: var(--t2); background: var(--raised); }
+.ticket-id:hover .copy-hint { opacity: 1; }
+.copy-hint { font-size: 9px; opacity: 0; transition: opacity 0.12s; }
+
+/* Stat chips */
+.stat-chips { display: flex; gap: 8px; flex-shrink: 0; }
+
+.stat-chip {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 13px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  transition: all 0.15s var(--smooth);
+  position: relative; overflow: hidden;
+}
+
+/* Thin top accent line — only on stat chips, not on every card */
+.stat-chip::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1.5px;
+  border-radius: 1px;
+}
+.stat-chip.c-g::before { background: var(--gs); }
+.stat-chip.c-b::before { background: var(--gp); }
+.stat-chip.c-a::before { background: var(--gw); }
+
+.stat-chip:hover {
+  border-color: var(--borderM);
+  transform: translateY(var(--card-hover-y));
+  box-shadow: var(--card-hover-shadow);
+}
+
+.stat-ic {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+}
+.stat-num { font-size: 20px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+.stat-lbl { font-size: 10px; color: var(--t3); margin-top: 1px; }
+
+/* Meta row — badges, branch, tags */
+.meta-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 8px; }
+
+.badge {
+  font-size: 11px; font-weight: 600; padding: 3px 11px;
+  border-radius: var(--r-f); white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.b-prog   { background: rgba(251,191,36,0.12); color: var(--g-amber); border: 1px solid rgba(251,191,36,0.2); }
+.b-done   { background: rgba(52,211,153,0.12);  color: var(--g-green); border: 1px solid rgba(52,211,153,0.2); }
+.b-review { background: rgba(77,124,255,0.12);  color: #8b9fff;        border: 1px solid rgba(77,124,255,0.2); }
+.b-pend   { background: rgba(251,191,36,0.12); color: var(--g-amber);  border: 1px solid rgba(251,191,36,0.2); }
+.b-red    { background: rgba(248,113,113,0.12); color: var(--g-red);   border: 1px solid rgba(248,113,113,0.2); }
+
+.chip-branch {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; font-family: var(--mono);
+  padding: 3px 9px; border-radius: var(--r-f);
+  background: rgba(34,211,238,0.08); color: var(--g-cyan);
+  border: 1px solid rgba(34,211,238,0.16);
+  cursor: pointer; transition: all 0.12s;
+}
+.chip-branch:hover { background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.25); }
+
+.chip-tag {
+  font-size: 10.5px; font-weight: 600;
+  padding: 3px 10px; border-radius: var(--r-f);
+}
+
+.feat-desc { font-size: 12.5px; color: var(--t2); line-height: 1.65; max-width: 580px; }
+
+/* ── TABS — keyboard shortcut hints on hover ── */
+.tab-row {
+  display: flex; align-items: center; gap: 2px;
+  padding: 13px 24px 0; flex-shrink: 0;
+}
+
+.tab {
+  font-family: var(--font); font-size: 12px; font-weight: 500;
+  color: var(--t3); padding: 6px 13px;
+  border: 1px solid transparent; background: none; cursor: pointer;
+  border-radius: var(--r-f); transition: all 0.12s;
+  display: flex; align-items: center; gap: 5px;
+  position: relative;
+}
+.tab:hover { background: var(--hover); color: var(--t2); }
+
+/* Shortcut hint appears on hover */
+.tab .sk {
+  font-family: var(--mono); font-size: 9px;
+  color: var(--t4);
+  opacity: 0; transition: opacity 0.12s;
+  margin-left: 1px;
+}
+.tab:hover .sk { opacity: 1; }
+
+.tab.on {
+  background: linear-gradient(135deg, rgba(77,124,255,0.16), rgba(139,92,246,0.10));
+  color: #a0aaff; font-weight: 700;
+  border-color: rgba(77,124,255,0.2);
+  box-shadow: 0 2px 12px rgba(77,124,255,0.10);
+}
+
+/* Badge — active tab gets brighter badge */
+.tbadge {
+  font-size: 9.5px; font-weight: 700; padding: 1.5px 6px;
+  border-radius: var(--r-f);
+  background: rgba(77,124,255,0.15); color: #8898cc;
+  font-family: var(--mono);
+  transition: all 0.12s;
+}
+.tab.on .tbadge {
+  background: linear-gradient(135deg, rgba(77,124,255,0.3), rgba(139,92,246,0.22));
+  color: #b0bfff;
+}
+.tbadge.live {
+  background: linear-gradient(135deg, rgba(52,211,153,0.2), rgba(34,211,238,0.15));
+  color: var(--g-green);
+  animation: live-badge 2s ease-in-out infinite;
+}
+@keyframes live-badge { 0%,100% { opacity:1; } 50% { opacity:0.7; } }
+
+/* ── CONTENT ── */
+.content { flex: 1; overflow-y: auto; padding: 13px 24px 24px; min-height: 0; display: flex; flex-direction: column; }
+.bento { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: auto 1fr auto; gap: 11px; flex: 1; align-items: stretch; }
+
+/* ── INSIGHTS ── */
+.ins-body { display: flex; gap: 24px; align-items: stretch; margin-top: 14px; }
+.ins-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; align-content: start; }
+.ins-stat { display: flex; flex-direction: column; gap: 3px; }
+.ins-num { font-size: 19px; font-weight: 700; letter-spacing: -0.03em; color: var(--t1); }
+.ins-lbl { font-size: 11px; color: var(--t3); }
+.ins-div { width: 1px; background: var(--border); flex-shrink: 0; align-self: stretch; }
+.ins-chart-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0; }
+.ins-chart-lbl { font-size: 11px; color: var(--t3); margin-bottom: 6px; }
+.ins-svg { width: 100%; height: 52px; display: block; }
+.ins-xlabels { display: flex; justify-content: space-between; margin-top: 4px; }
+.ins-xlabels span { font-size: 10px; color: var(--t3); font-family: var(--mono); }
+.ins-tokens { display: flex; flex-direction: column; gap: 9px; min-width: 170px; }
+.ins-tok-head { font-size: 11px; color: var(--t3); }
+.ins-tok-bar { display: flex; flex-direction: column; gap: 3px; }
+.ins-tok-row { display: flex; justify-content: space-between; align-items: center; }
+.ins-tok-lbl { font-size: 11px; color: var(--t3); }
+.ins-tok-val { font-size: 11px; font-family: var(--mono); color: var(--t2); }
+.ins-track { height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+.ins-fill { height: 100%; border-radius: 3px; }
+
+/* ════════════════════════════
+   CARDS
+   ════════════════════════════ */
+.card {
+  border-radius: var(--r);
+  padding: 17px;
+  border: 1px solid var(--border);
+  transition: transform 0.18s var(--smooth), box-shadow 0.18s var(--smooth), border-color 0.18s;
+  position: relative; overflow: hidden;
+}
+
+/* Subtle inner top-edge sheen on all cards */
+.card::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  pointer-events: none;
+}
+
+/* Consistent hover across all card types */
+.card:hover {
+  transform: translateY(var(--card-hover-y));
+  box-shadow: var(--card-hover-shadow);
+  border-color: var(--borderM);
+}
+
+/* Tasks card — blue tint */
+.card-tasks {
+  background: linear-gradient(155deg, rgba(77,124,255,0.04) 0%, var(--card) 40%);
+}
+.card-tasks:hover { border-color: rgba(77,124,255,0.18); }
+
+/* Session card — gradient border, dark bg */
+.card-session {
+  border-color: transparent;
+  background-image:
+    linear-gradient(145deg, rgba(77,124,255,0.05) 0%, rgba(139,92,246,0.03) 50%, var(--card-b) 100%),
+    linear-gradient(135deg, rgba(77,124,255,0.32), rgba(139,92,246,0.22), rgba(52,211,153,0.12));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+.card-session:hover {
+  box-shadow: var(--card-hover-shadow), 0 0 28px rgba(77,124,255,0.05);
+}
+
+/* Plan card — amber left border */
+.card-plan {
+  background: linear-gradient(155deg, rgba(251,191,36,0.04) 0%, var(--card) 45%);
+  border-left: 2.5px solid var(--g-amber);
+}
+.card-plan:hover { border-color: rgba(251,191,36,0.2); border-left-color: var(--g-amber); }
+
+/* History + Links — plain dark */
+.card-hist { background: var(--card); }
+.card-links { background: var(--card); }
+
+/* Card header */
+.card-hd { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
+.card-ttl { font-size: 13.5px; font-weight: 700; letter-spacing: -0.02em; }
+.card-sub { font-size: 11px; color: var(--t3); margin-top: 2px; }
+
+.ibt {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--t3); font-size: 11px; flex-shrink: 0;
+  transition: all 0.12s;
+}
+.ibt:hover { background: rgba(255,255,255,0.08); color: var(--t2); }
+
+/* ── PROGRESS — no shimmer on determinate ── */
+.prog {
+  width: 100%; height: 4px;
+  background: rgba(255,255,255,0.07); border-radius: 2px;
+  overflow: hidden; margin: 6px 0 14px;
+}
+.prog-f {
+  height: 100%; border-radius: 2px;
+  background: var(--gp);
+  transition: width 0.5s var(--smooth);
+}
+
+/* Indeterminate progress (loading) — shimmer only here */
+.prog-indeterminate .prog-f {
+  width: 40% !important;
+  animation: prog-slide 1.4s ease-in-out infinite;
+}
+@keyframes prog-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+/* ── TASKS ── */
+.task-list { display: flex; flex-direction: column; gap: 1px; }
+
+.task {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 8px; border-radius: var(--r-sm);
+  cursor: pointer; transition: background 0.1s;
+  user-select: none;
+}
+.task:hover { background: var(--hover); }
+
+.tchk {
+  width: 16px; height: 16px; border-radius: 4px;
+  border: 1.5px solid rgba(255,255,255,0.13);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: transparent;
+  flex-shrink: 0; transition: all 0.14s var(--spring); cursor: pointer;
+}
+.tchk:hover { border-color: var(--g-blue); }
+.tchk.done { background: var(--gp); border: none; color: #fff; box-shadow: 0 2px 8px var(--gl-blue); }
+
+.ttxt { font-size: 12.5px; color: var(--t1); flex: 1; line-height: 1.4; }
+.ttxt.done { color: var(--t3); text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.12); }
+
+/* Empty state for task list */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 28px 16px; color: var(--t4); text-align: center;
+}
+.empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.35; }
+.empty-txt  { font-size: 12.5px; color: var(--t3); font-weight: 500; margin-bottom: 4px; }
+.empty-sub  { font-size: 11.5px; color: var(--t4); line-height: 1.5; }
+
+/* ── SESSION CARD elements ── */
+.s-glow {
+  position: absolute; inset: -60px;
+  background: radial-gradient(ellipse at 40% 40%, rgba(77,124,255,0.06) 0%, transparent 60%);
+  pointer-events: none; animation: sg 4s ease-in-out infinite;
+}
+@keyframes sg { 0%,100% { opacity:0.6; } 50% { opacity:1; } }
+
+.dot-field {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(77,124,255,0.18) 1px, transparent 1px);
+  background-size: 20px 20px;
+  mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, black 0%, transparent 100%);
+  pointer-events: none; opacity: 0.18;
+  animation: df 14s linear infinite;
+}
+@keyframes df { 0% { background-position:0 0; } 100% { background-position:20px 20px; } }
+
+.s-inner { position: relative; z-index: 1; }
+
+.live-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  background: rgba(52,211,153,0.10); border: 1px solid rgba(52,211,153,0.2);
+  padding: 4px 10px; border-radius: var(--r-f); margin-bottom: 10px;
+}
+.live-pill .lt { color: var(--g-green); }
+
+.ring-d {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--g-green);
+  animation: ring-p 1.8s ease-out infinite; flex-shrink: 0;
+}
+@keyframes ring-p {
+  0%   { box-shadow: 0 0 0 0   rgba(52,211,153,0.7); }
+  70%  { box-shadow: 0 0 0 8px rgba(52,211,153,0); }
+  100% { box-shadow: 0 0 0 0   rgba(52,211,153,0); }
+}
+
+.s-heading { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.4; margin-bottom: 8px; color: #f0f2ff; }
+.s-body    { font-size: 12.5px; color: #9aa5c8; line-height: 1.6; }
+.s-timer {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 14px; font-size: 11.5px; color: #7888aa;
+  background: rgba(255,255,255,0.05); padding: 5px 12px;
+  border-radius: var(--r-f); border: 1px solid rgba(255,255,255,0.08);
+  font-family: var(--mono);
+}
+
+/* ── SESSION HISTORY ── */
+.slist { display: flex; flex-direction: column; }
+.sitem {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid var(--border);
+  cursor: pointer; border-radius: 0; transition: background 0.1s;
+}
+.sitem:last-child { border-bottom: none; }
+.sitem:hover { background: var(--hover); margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: var(--r-sm); border-bottom-color: transparent; }
+
+.sdot { width: 7px; height: 7px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.sdot.on  { background: var(--g-green); box-shadow: 0 0 8px var(--gl-green); animation: dp 2s ease-in-out infinite; }
+.sdot.off { background: var(--t4); }
+@keyframes dp { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+.stitle { font-size: 12.5px; font-weight: 500; color: var(--t1); }
+.smeta  { font-size: 11px; color: var(--t3); margin-top: 2px; display: flex; gap: 8px; align-items: center; }
+.mmono  { font-family: var(--mono); font-size: 10px; color: var(--t4); }
+
+/* Session empty state */
+.session-empty { padding: 20px 0; }
+
+/* ── LINKS ── */
+.lrow {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 8px; border-radius: var(--r-sm);
+  cursor: pointer; transition: background 0.1s;
+}
+.lrow:hover { background: var(--hover); }
+
+.lico {
+  width: 30px; height: 30px; border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+}
+.lico-gh    { background: rgba(255,255,255,0.05); color: var(--t2); }
+.lico-figma { background: linear-gradient(135deg, rgba(162,89,255,0.16), rgba(236,72,153,0.08)); color: #c084fc; }
+.lico-jira  { background: linear-gradient(135deg, rgba(77,124,255,0.16), rgba(34,211,238,0.08)); color: #60a5fa; }
+
+.lname { font-size: 12.5px; font-weight: 500; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lurl  { font-size: 10px; font-family: var(--mono); color: var(--t3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lext  { font-size: 9px; color: var(--t4); margin-left: auto; flex-shrink: 0; opacity: 0; transition: opacity 0.1s; }
+.lrow:hover .lext { opacity: 1; }
+
+/* ── PLAN STEPS ── */
+.pstep { font-size: 12px; color: var(--t2); display: flex; gap: 8px; padding: 3px 0; line-height: 1.5; }
+.pnum  { font-family: var(--mono); font-size: 9.5px; color: var(--t4); min-width: 16px; padding-top: 2px; }
+
+/* ── SKELETON LOADER ── */
+.skel {
+  background: linear-gradient(90deg, var(--raised) 25%, rgba(255,255,255,0.04) 50%, var(--raised) 75%);
+  background-size: 200% 100%;
+  animation: skel-shine 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+@keyframes skel-shine {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skel-line { height: 12px; margin-bottom: 8px; }
+.skel-line.w-75 { width: 75%; }
+.skel-line.w-50 { width: 50%; }
+.skel-line.w-90 { width: 90%; }
+.skel-line.tall { height: 16px; }
+
+/* ── BUTTONS ── */
+.btn {
+  font-family: var(--font); font-size: 12px; font-weight: 600;
+  padding: 7px 16px; border-radius: var(--r-f);
+  border: none; cursor: pointer;
+  transition: all 0.14s var(--smooth);
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.btn-p { background: var(--gp); color: #fff; box-shadow: 0 3px 14px var(--gl-blue); }
+.btn-p:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 20px var(--gl-blue); }
+.btn-d { background: rgba(248,113,113,0.13); color: var(--g-red); border: 1px solid rgba(248,113,113,0.2); }
+.btn-d:hover { background: rgba(248,113,113,0.2); }
+.btn-g { background: transparent; color: var(--t3); padding: 5px 10px; }
+.btn-g:hover { background: var(--hover); color: var(--t2); }
+.btn-s { background: var(--raised); color: var(--t2); border: 1px solid var(--border); }
+.btn-s:hover { background: var(--hover); color: var(--t1); border-color: var(--borderM); }
+
+/* ════════════════════════════
+   COMMAND PALETTE
+   ════════════════════════════ */
+.veil {
+  position: fixed; inset: 0;
+  background: rgba(5,7,15,0.82);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 17vh; z-index: 1000;
+  animation: vi 0.1s ease;
+}
+
+.cmd {
+  width: 540px;
+  background: rgba(14,17,28,0.96);
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(rgba(14,17,28,0.96), rgba(14,17,28,0.96)),
+    linear-gradient(135deg, rgba(77,124,255,0.35), rgba(139,92,246,0.25));
+  background-origin: border-box; background-clip: padding-box, border-box;
+  border-radius: var(--r-lg);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 40px rgba(77,124,255,0.05);
+  overflow: hidden; animation: ci 0.18s var(--smooth);
+}
+
+@keyframes vi { from { opacity:0; }                                          to { opacity:1; } }
+@keyframes ci { from { opacity:0; transform:scale(0.96) translateY(-12px); } to { opacity:1; transform:scale(1) translateY(0); } }
+
+.cmd-sr {
+  padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: center; gap: 12px;
+}
+.cmd-inp {
+  flex: 1; background: none; border: none; outline: none;
+  font-size: 15px; font-weight: 500; color: var(--t1); font-family: var(--font);
+}
+.cmd-inp::placeholder { color: var(--t3); }  /* brighter placeholder */
+
+.cmd-res { padding: 8px; max-height: 340px; overflow-y: auto; }
+.cmd-grp { font-size: 9.5px; font-weight: 700; color: var(--t4); padding: 8px 10px 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+.cmd-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 10px; border-radius: var(--r-sm); cursor: pointer; transition: background 0.08s;
+}
+.cmd-row.hi, .cmd-row:hover { background: linear-gradient(90deg, rgba(77,124,255,0.07), rgba(139,92,246,0.04)); }
+
+.cmd-ico { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.cmd-txt { font-size: 13px; font-weight: 500; color: var(--t1); flex: 1; }
+.cmd-sub { font-size: 10.5px; color: var(--t4); font-family: var(--mono); }
+.cmd-keys { display: flex; gap: 3px; }
+.cmd-keys kbd, .cmd-ft kbd {
+  font-family: var(--mono); font-size: 9px; color: var(--t4);
+  background: rgba(255,255,255,0.05); padding: 2px 5px;
+  border-radius: 4px; border: 1px solid rgba(255,255,255,0.07);
+}
+.cmd-ft {
+  padding: 8px 14px; border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; gap: 16px; font-size: 10.5px; color: var(--t4);
+}
+
+/* ════════════════════════════
+   TOAST
+   ════════════════════════════ */
+.toast-stk { position: fixed; bottom: 22px; right: 22px; display: flex; flex-direction: column; gap: 8px; z-index: 2000; }
+
+.toast {
+  background: rgba(14,17,28,0.97);
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(rgba(14,17,28,0.97), rgba(14,17,28,0.97)),
+    linear-gradient(135deg, rgba(52,211,153,0.3), rgba(77,124,255,0.2));
+  background-origin: border-box; background-clip: padding-box, border-box;
+  border-radius: var(--r); padding: 12px 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; min-width: 280px;
+  animation: ti 0.28s var(--spring); backdrop-filter: blur(12px);
+}
+@keyframes ti { from { opacity:0; transform:translateY(16px) scale(0.93); } to { opacity:1; transform:translateY(0) scale(1); } }
+
+.toast-undo { margin-left: auto; font-size: 11.5px; font-weight: 700; color: #8b9fff; background: none; border: none; cursor: pointer; font-family: var(--font); }
+.toast-undo:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="shell-fx"><div class="ray"></div></div>
+
+<div class="app-win">
+<div class="app-frame">
+
+  <!-- ═══ ICON SIDEBAR ═══ -->
+  <div class="icon-bar">
+    <div class="logo">FH</div>
+
+    <button class="nav-ic" data-tip="Dashboard"  data-key="⌘1">⊞</button>
+    <button class="nav-ic on" data-tip="Features" data-key="⌘2">◈</button>
+    <button class="nav-ic" data-tip="Agents"     data-key="⌘3">◎</button>
+    <button class="nav-ic" data-tip="Knowledge"  data-key="⌘4">◉</button>
+    <button class="nav-ic" data-tip="Timeline"   data-key="⌘5">◷</button>
+
+    <div class="nav-sep"></div>
+
+    <div class="nav-spacer"></div>
+
+    <button class="nav-ic" data-tip="Search" data-key="⌘K" onclick="toggleCmd()">⌕</button>
+    <button class="nav-ic" data-tip="Settings">⚙</button>
+  </div>
+
+  <!-- ═══ FEATURE PANEL ═══ -->
+  <div class="feat-panel">
+    <div class="fp-hd">
+      <div class="fp-title"><span class="gt gt-p">Features</span></div>
+      <div class="fp-search" onclick="toggleCmd()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5.5" cy="5.5" r="4"/><path d="M9 9l2 2"/></svg>
+        Search...
+        <kbd>⌘K</kbd>
+      </div>
+    </div>
+
+    <div class="fp-filters">
+      <button class="fpill on">All</button>
+      <button class="fpill">Active</button>
+      <button class="fpill">Done</button>
+    </div>
+
+    <div class="feat-list">
+      <div class="grp-lbl">Current Sprint</div>
+
+      <div class="fitem on s-amber">
+        <div class="fdot" style="background:var(--g-amber)"></div>
+        <div class="fname">Auth System Redesign</div>
+        <div class="pmb">
+          <div class="pmb-t"><div class="pmb-f" style="width:60%;background:linear-gradient(90deg,var(--g-blue),var(--g-violet))"></div></div>
+          <span class="pmb-n">3/5</span>
+        </div>
+      </div>
+
+      <div class="fitem s-amber">
+        <div class="fdot" style="background:var(--g-amber)"></div>
+        <div class="fname">Dashboard Analytics</div>
+        <div class="pmb">
+          <div class="pmb-t"><div class="pmb-f" style="width:25%;background:linear-gradient(90deg,var(--g-pink),var(--g-orange))"></div></div>
+          <span class="pmb-n">1/4</span>
+        </div>
+      </div>
+
+      <div class="fitem s-green">
+        <div class="fdot" style="background:var(--g-green)"></div>
+        <div class="fname">Email Notifications</div>
+        <span class="fmeta">2d</span>
+      </div>
+
+      <div class="fitem s-blue">
+        <div class="fdot" style="background:var(--g-blue)"></div>
+        <div class="fname">API Rate Limiting</div>
+        <span class="fmeta">5h</span>
+      </div>
+
+      <div class="grp-lbl">Backlog</div>
+
+      <div class="fitem"><div class="fdot" style="background:var(--t4)"></div><div class="fname">Dark Mode Improvements</div></div>
+      <div class="fitem"><div class="fdot" style="background:var(--t4)"></div><div class="fname">Export to PDF</div></div>
+      <div class="fitem"><div class="fdot" style="background:var(--t4)"></div><div class="fname">Multi-language Support</div></div>
+
+      <!-- Example empty state (comment out above and uncomment to demo) -->
+      <!--
+      <div class="list-empty">
+        <div class="list-empty-icon">◈</div>
+        No features yet. Create one to get started.
+      </div>
+      -->
+    </div>
+
+    <div class="fp-footer">
+      <button class="add-btn">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 1v10M1 6h10"/></svg>
+        New Feature
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main">
+    <div class="main-hd">
+
+      <div class="title-row">
+        <div>
+          <div class="feat-title">
+            Auth System <span class="gt gt-p">Redesign</span>
+          </div>
+          <div class="feat-sub">
+            <span class="ticket-id">AUTH-42 <span class="copy-hint">⎘</span></span>
+            <span>·</span>
+            <span>Updated 2 hours ago</span>
+          </div>
+        </div>
+
+        <div class="stat-chips">
+          <div class="stat-chip c-g">
+            <div class="stat-ic" style="background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.12)">
+              <span style="color:var(--g-green)">✓</span>
+            </div>
+            <div>
+              <div class="stat-num"><span class="gt gt-s">3</span></div>
+              <div class="stat-lbl">Done</div>
+            </div>
+          </div>
+          <div class="stat-chip c-b">
+            <div class="stat-ic" style="background:rgba(77,124,255,0.07);border:1px solid rgba(77,124,255,0.12)">
+              <span style="color:#8b9fff">◎</span>
+            </div>
+            <div>
+              <div class="stat-num"><span class="gt gt-p">2</span></div>
+              <div class="stat-lbl">Agents</div>
+            </div>
+          </div>
+          <div class="stat-chip c-a">
+            <div class="stat-ic" style="background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.12)">
+              <span style="color:var(--g-amber)">⚡</span>
+            </div>
+            <div>
+              <div class="stat-num"><span class="gt gt-w">1</span></div>
+              <div class="stat-lbl">Plan</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="meta-row">
+        <span class="badge b-prog">In Progress</span>
+        <span class="chip-branch">⎇ feat/auth-redesign</span>
+        <span class="chip-tag" style="background:rgba(77,124,255,0.10);color:#8b9fff;border:1px solid rgba(77,124,255,0.18)">backend</span>
+        <span class="chip-tag" style="background:rgba(248,113,113,0.10);color:var(--g-red);border:1px solid rgba(248,113,113,0.18)">security</span>
+      </div>
+
+      <p class="feat-desc">Migrate from session-based auth to JWT with refresh tokens. Includes OAuth2 provider support and updated RBAC permissions model.</p>
+    </div>
+
+    <!-- Tabs with keyboard shortcut hints -->
+    <div class="tab-row">
+      <button class="tab on">Tasks <span class="tbadge">3/5</span> <span class="sk">⌘1</span></button>
+      <button class="tab">Notes <span class="sk">⌘2</span></button>
+      <button class="tab">Links <span class="tbadge">4</span> <span class="sk">⌘3</span></button>
+      <button class="tab">Agents <span class="tbadge live">1 live</span> <span class="sk">⌘4</span></button>
+      <button class="tab">Files <span class="sk">⌘5</span></button>
+      <div style="flex:1"></div>
+      <button class="btn btn-p" style="font-size:11.5px;padding:6px 16px;margin-bottom:2px">
+        ▶ Start Agent
+      </button>
+    </div>
+
+    <!-- Bento content -->
+    <div class="content">
+      <div class="bento">
+
+        <!-- TASKS -->
+        <div class="card card-tasks" style="grid-row:span 2">
+          <div class="card-hd">
+            <div>
+              <div class="card-ttl"><span class="gt gt-p">Tasks</span></div>
+              <div class="card-sub">3 of 5 completed · 60%</div>
+            </div>
+            <button class="btn btn-g" style="padding:4px 10px;font-size:11.5px">+ Add</button>
+          </div>
+
+          <div class="prog"><div class="prog-f" style="width:60%"></div></div>
+
+          <div class="task-list">
+            <div class="task"><div class="tchk done">✓</div><span class="ttxt done">Set up JWT token generation</span></div>
+            <div class="task"><div class="tchk done">✓</div><span class="ttxt done">Implement refresh token rotation</span></div>
+            <div class="task"><div class="tchk done">✓</div><span class="ttxt done">Add OAuth2 Google provider</span></div>
+            <div class="task"><div class="tchk"></div><span class="ttxt">Migrate existing sessions to JWT</span></div>
+            <div class="task"><div class="tchk"></div><span class="ttxt">Update RBAC permission checks</span></div>
+          </div>
+
+          <!-- Empty state demo (uncomment to see) -->
+          <!--
+          <div class="empty-state">
+            <div class="empty-icon">✓</div>
+            <div class="empty-txt">No tasks yet</div>
+            <div class="empty-sub">Break this feature into tasks<br>to track progress</div>
+          </div>
+          -->
+        </div>
+
+        <!-- SESSION — dark glass + gradient border -->
+        <div class="card card-session">
+          <div class="s-glow"></div>
+          <div class="dot-field"></div>
+          <div class="s-inner">
+            <div class="live-pill"><div class="ring-d"></div><span class="lt">Active Now</span></div>
+            <div class="s-heading">Implementing refresh token rotation with sliding window expiry</div>
+            <div class="s-body">Integrating TokenRefreshService with AuthMiddleware — handling concurrent refresh race conditions via Redis distributed lock.</div>
+            <div class="s-timer">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5.5" cy="5.5" r="4.5"/><path d="M5.5 3v2.5l1.5 1.5"/></svg>
+              12m 34s
+            </div>
+          </div>
+        </div>
+
+        <!-- PLAN -->
+        <div class="card card-plan">
+          <div class="card-hd">
+            <div>
+              <div class="card-ttl"><span class="gt gt-w">Pending Plan</span></div>
+              <div class="card-sub">Submitted 5 min ago</div>
+            </div>
+            <span class="badge b-pend" style="font-size:10px">Review</span>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:8px;letter-spacing:-0.01em">Session migration strategy</div>
+          <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:14px">
+            <div class="pstep"><span class="pnum">1.</span>Create migration table for session→JWT</div>
+            <div class="pstep"><span class="pnum">2.</span>Add dual-read layer (session &amp; JWT)</div>
+            <div class="pstep"><span class="pnum">3.</span>Background job to convert sessions</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-p" style="font-size:11.5px;padding:6px 16px">Approve</button>
+            <button class="btn btn-d" style="font-size:11.5px;padding:6px 16px">Reject</button>
+          </div>
+        </div>
+
+        <!-- SESSION HISTORY -->
+        <div class="card card-hist">
+          <div class="card-hd">
+            <div class="card-ttl"><span class="gt gt-p">Agent History</span></div>
+            <span style="font-size:11px;color:var(--t3);font-family:var(--mono)">3 total</span>
+          </div>
+          <div class="slist">
+            <div class="sitem">
+              <div class="sdot on"></div>
+              <div style="flex:1">
+                <div class="stitle">Refresh token rotation</div>
+                <div class="smeta">
+                  Active
+                  <span class="mmono">12m 34s</span>
+                </div>
+              </div>
+            </div>
+            <div class="sitem">
+              <div class="sdot off"></div>
+              <div style="flex:1">
+                <div class="stitle">JWT token generation setup</div>
+                <div class="smeta">
+                  Yesterday 4:32 PM
+                  <span class="mmono">45m</span>
+                </div>
+              </div>
+            </div>
+            <div class="sitem">
+              <div class="sdot off"></div>
+              <div style="flex:1">
+                <div class="stitle">OAuth2 Google provider</div>
+                <div class="smeta">
+                  2 days ago
+                  <span class="mmono">1h 12m</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty state (uncomment to demo) -->
+            <!--
+            <div class="empty-state session-empty">
+              <div class="empty-icon">◎</div>
+              <div class="empty-txt">No agents yet</div>
+              <div class="empty-sub">Start an agent to begin<br>working on this feature</div>
+            </div>
+            -->
+          </div>
+        </div>
+
+        <!-- LINKS -->
+        <div class="card card-links">
+          <div class="card-hd">
+            <div class="card-ttl"><span class="gt gt-c">Links</span></div>
+            <button class="btn btn-g" style="font-size:11px;padding:4px 10px">+ Add</button>
+          </div>
+          <div>
+            <div class="lrow">
+              <div class="lico lico-gh">
+                <svg width="13" height="13" fill="var(--t2)" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div class="lname">acme/auth-service — PR #142</div>
+                <div class="lurl">github.com/acme/auth-service/pull/142</div>
+              </div>
+              <span class="lext">↗</span>
+            </div>
+            <div class="lrow">
+              <div class="lico lico-figma">◆</div>
+              <div style="flex:1;min-width:0">
+                <div class="lname">Auth Flow Mockups</div>
+                <div class="lurl">figma.com/file/abc123</div>
+              </div>
+              <span class="lext">↗</span>
+            </div>
+            <div class="lrow">
+              <div class="lico lico-jira">■</div>
+              <div style="flex:1;min-width:0">
+                <div class="lname">AUTH-42 Jira ticket</div>
+                <div class="lurl">acme.atlassian.net/browse/AUTH-42</div>
+              </div>
+              <span class="lext">↗</span>
+            </div>
+
+            <!-- Empty state (uncomment to demo) -->
+            <!--
+            <div class="empty-state">
+              <div class="empty-icon">⎋</div>
+              <div class="empty-txt">No links yet</div>
+              <div class="empty-sub">Add GitHub PRs, Figma files,<br>Jira tickets and more</div>
+            </div>
+            -->
+          </div>
+        </div>
+
+        <!-- INSIGHTS — full-width bottom strip -->
+        <div class="card" style="grid-column: span 3">
+          <div class="card-hd">
+            <div class="card-ttl"><span class="gt gt-c">Insights</span></div>
+            <div style="display:flex;gap:5px">
+              <button class="btn btn-g" style="font-size:10.5px;padding:3px 9px;opacity:0.5">7d</button>
+              <button class="btn btn-p" style="font-size:10.5px;padding:3px 9px">14d</button>
+              <button class="btn btn-g" style="font-size:10.5px;padding:3px 9px;opacity:0.5">30d</button>
+            </div>
+          </div>
+          <div class="ins-body">
+
+            <!-- Key stats -->
+            <div class="ins-stats">
+              <div class="ins-stat">
+                <div class="ins-num"><span class="gt gt-p">47.2k</span></div>
+                <div class="ins-lbl">Total tokens</div>
+              </div>
+              <div class="ins-stat">
+                <div class="ins-num"><span class="gt gt-s">8h 34m</span></div>
+                <div class="ins-lbl">Time invested</div>
+              </div>
+              <div class="ins-stat">
+                <div class="ins-num">12</div>
+                <div class="ins-lbl">Agent sessions</div>
+              </div>
+              <div class="ins-stat">
+                <div class="ins-num">3 / 5</div>
+                <div class="ins-lbl">Tasks done</div>
+              </div>
+            </div>
+
+            <div class="ins-div"></div>
+
+            <!-- Sparkline: agent activity -->
+            <div class="ins-chart-wrap">
+              <div class="ins-chart-lbl">Agent sessions · last 14 days</div>
+              <svg class="ins-svg" viewBox="0 0 238 52" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="ig" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="rgba(77,124,255,0.32)"/>
+                    <stop offset="100%" stop-color="rgba(77,124,255,0.0)"/>
+                  </linearGradient>
+                </defs>
+                <!-- Grid lines -->
+                <line x1="0" y1="17" x2="238" y2="17" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                <line x1="0" y1="34" x2="238" y2="34" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                <!-- Area fill -->
+                <path d="M0,52 L18,46 L36,31 L54,52 L72,14 L90,27 L108,40 L126,52 L144,27 L162,2 L180,13 L198,27 L216,40 L238,13 L238,52 Z"
+                      fill="url(#ig)"/>
+                <!-- Line -->
+                <path d="M0,52 L18,46 L36,31 L54,52 L72,14 L90,27 L108,40 L126,52 L144,27 L162,2 L180,13 L198,27 L216,40 L238,13"
+                      fill="none" stroke="#4d7cff" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+                <!-- Highlight dot at peak -->
+                <circle cx="162" cy="2" r="3" fill="#4d7cff"/>
+                <circle cx="162" cy="2" r="5" fill="rgba(77,124,255,0.2)"/>
+              </svg>
+              <div class="ins-xlabels">
+                <span>Mar 21</span>
+                <span>Mar 28</span>
+                <span>Today</span>
+              </div>
+            </div>
+
+            <div class="ins-div"></div>
+
+            <!-- Token breakdown -->
+            <div class="ins-tokens">
+              <div class="ins-tok-head">Token breakdown</div>
+              <div class="ins-tok-bar">
+                <div class="ins-tok-row">
+                  <span class="ins-tok-lbl">Input</span>
+                  <span class="ins-tok-val">31.4k</span>
+                </div>
+                <div class="ins-track">
+                  <div class="ins-fill" style="width:67%;background:linear-gradient(90deg,#4d7cff,#7b6fff)"></div>
+                </div>
+              </div>
+              <div class="ins-tok-bar">
+                <div class="ins-tok-row">
+                  <span class="ins-tok-lbl">Output</span>
+                  <span class="ins-tok-val">12.8k</span>
+                </div>
+                <div class="ins-track">
+                  <div class="ins-fill" style="width:27%;background:linear-gradient(90deg,#7b6fff,#b06fff)"></div>
+                </div>
+              </div>
+              <div class="ins-tok-bar">
+                <div class="ins-tok-row">
+                  <span class="ins-tok-lbl">Cached</span>
+                  <span class="ins-tok-val">3.0k</span>
+                </div>
+                <div class="ins-track">
+                  <div class="ins-fill" style="width:6%;background:rgba(255,255,255,0.18)"></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- SKELETON CARD (loading state demo) -->
+        <div class="card card-hist" style="display:none" id="skeletonCard">
+          <div class="card-hd">
+            <div style="flex:1">
+              <div class="skel skel-line tall w-50"></div>
+              <div class="skel skel-line w-75" style="margin-top:6px"></div>
+            </div>
+          </div>
+          <div class="skel skel-line w-90"></div>
+          <div class="skel skel-line w-75"></div>
+          <div class="skel skel-line w-50"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div><!-- app-frame -->
+</div><!-- app-win -->
+
+<!-- COMMAND PALETTE -->
+<div class="veil" id="cmd" style="display:none" onclick="if(event.target===this)toggleCmd()">
+  <div class="cmd">
+    <div class="cmd-sr">
+      <svg width="17" height="17" fill="none" stroke="var(--t3)" stroke-width="2"><circle cx="7.5" cy="7.5" r="6"/><path d="M12 12l3.5 3.5"/></svg>
+      <input class="cmd-inp" placeholder="Search features, run commands..." id="ci">
+    </div>
+    <div class="cmd-res">
+      <div class="cmd-grp">Features</div>
+      <div class="cmd-row hi">
+        <div class="cmd-ico">🔐</div>
+        <div><div class="cmd-txt">Auth System Redesign</div><div class="cmd-sub">AUTH-42 · In Progress · feat/auth-redesign</div></div>
+        <div class="cmd-keys"><kbd>↵</kbd></div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd-ico">📊</div>
+        <div><div class="cmd-txt">Dashboard Analytics</div><div class="cmd-sub">DASH-18 · In Progress</div></div>
+      </div>
+      <div class="cmd-grp">Actions</div>
+      <div class="cmd-row">
+        <div class="cmd-ico" style="font-size:16px">+</div>
+        <div class="cmd-txt">New Feature</div>
+        <div class="cmd-keys"><kbd>Ctrl</kbd><kbd>N</kbd></div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd-ico">▶</div>
+        <div class="cmd-txt">Start Agent</div>
+        <div class="cmd-keys"><kbd>Ctrl</kbd><kbd>↵</kbd></div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd-ico">⌕</div>
+        <div class="cmd-txt">Search all features</div>
+        <div class="cmd-keys"><kbd>/</kbd></div>
+      </div>
+    </div>
+    <div class="cmd-ft">
+      <span><kbd>↑↓</kbd> Navigate</span>
+      <span><kbd>↵</kbd> Open</span>
+      <span><kbd>Tab</kbd> Actions</span>
+      <span><kbd>Esc</kbd> Close</span>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-stk">
+  <div class="toast" id="t">
+    <span style="font-size:15px;display:inline-block;background-image:var(--gs);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">✓</span>
+    <span>Task marked complete</span>
+    <button class="toast-undo">Undo <kbd style="font-family:var(--mono);font-size:9px;color:var(--t4);background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:3px;border:1px solid rgba(255,255,255,0.1)">Z</kbd></button>
+  </div>
+</div>
+
+<script>
+function toggleCmd() {
+  const el = document.getElementById('cmd');
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'flex';
+  if (!open) setTimeout(() => document.getElementById('ci')?.focus(), 30);
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); toggleCmd(); }
+  if (e.key === 'Escape') document.getElementById('cmd').style.display = 'none';
+});
+
+// Dismiss toast
+setTimeout(() => {
+  const t = document.getElementById('t');
+  if (!t) return;
+  t.style.transition = 'all 0.3s ease-out';
+  t.style.opacity = '0'; t.style.transform = 'translateY(12px) scale(0.94)';
+  setTimeout(() => t.remove(), 300);
+}, 6000);
+</script>
+
+</body>
+</html>

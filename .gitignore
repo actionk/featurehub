@@ -1,0 +1,23 @@
+node_modules/
+dist/
+src-tauri/target/
+.vite/
+*.log
+/.claude/
+.worktrees/
+.superpowers/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.stackdump
+
+# IDE
+.idea/
+.vscode/settings.json
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*

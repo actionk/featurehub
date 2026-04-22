@@ -1,0 +1,46 @@
+[package]
+name = "feature-hub"
+version = "0.1.0"
+description = "Desktop feature management with Claude Code integration"
+license = "MIT"
+repository = "https://github.com/LittleBrushGames/FeatureHub"
+edition = "2021"
+default-run = "feature-hub"
+
+[[bin]]
+name = "fh"
+path = "src/bin/fh.rs"
+
+[[bin]]
+name = "fh-mcp"
+path = "src/bin/fh_mcp.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+tauri = { version = "2", features = ["protocol-asset"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-window-state = "2"
+rusqlite = { version = "0.31", features = ["bundled", "backup"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+rmcp = { version = "1.2", features = ["server", "transport-io"] }
+tokio = { version = "1", features = ["full"] }
+schemars = "0.8"
+dirs = "5"
+glob = "0.3"
+open = "5"
+base64 = "0.22"
+
+inquire = "0.7"
+portable-pty = "0.8"
+zip = { version = "2", features = ["deflate"] }
+
+[dev-dependencies]
+tempfile = "3"

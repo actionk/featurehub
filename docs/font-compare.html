@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FeatureHub — Font Comparison</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;800&family=Onest:wght@400;500;600;800&family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;800&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,800&family=Outfit:wght@400;500;600;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --shell:   #090c17;
+  --card:    #131826;
+  --raised:  #1c2338;
+  --hover:   #212840;
+  --border:  rgba(255,255,255,0.07);
+  --borderM: rgba(255,255,255,0.12);
+  --t1: #eef0fc;
+  --t2: #8090b8;
+  --t3: #454d70;
+  --t4: #272e4a;
+  --g-blue:   #4d7cff;
+  --g-violet: #8b5cf6;
+  --g-pink:   #ec4899;
+  --g-cyan:   #22d3ee;
+  --g-green:  #34d399;
+  --g-amber:  #fbbf24;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--shell);
+  color: var(--t1);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding: 40px 32px 60px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.page-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--t4);
+  margin-bottom: 36px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* Each font card */
+.fc {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  transition: all 0.18s ease-out;
+  cursor: pointer;
+  position: relative;
+}
+
+.fc:hover {
+  border-color: var(--borderM);
+  transform: translateY(-3px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+/* Accent top bar unique per font */
+.fc-bar {
+  height: 2px;
+  width: 100%;
+}
+
+.fc-header {
+  padding: 16px 18px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+
+.fc-name {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--t3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fc-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  color: var(--t4);
+}
+
+.fc-body { padding: 20px 18px 22px; }
+
+/* The demo content — font set per card */
+.demo-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin-bottom: 6px;
+}
+
+.demo-heading {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  margin-bottom: 4px;
+}
+
+.demo-heading .accent {
+  display: inline-block;
+  background-image: linear-gradient(135deg, #4d7cff, #8b5cf6, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.demo-sub {
+  font-size: 11.5px;
+  color: var(--t3);
+  margin-bottom: 14px;
+}
+
+.demo-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin: 14px 0;
+}
+
+.demo-body {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--t2);
+  margin-bottom: 14px;
+}
+
+.demo-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 11px;
+  border-radius: 99px;
+}
+
+.pill-blue   { background: rgba(77,124,255,0.12); color: #8b9fff; border: 1px solid rgba(77,124,255,0.2); }
+.pill-green  { background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+.pill-amber  { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+.pill-pink   { background: rgba(236,72,153,0.12); color: #f472b6; border: 1px solid rgba(236,72,153,0.2); }
+
+.demo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  background: var(--raised);
+  border-radius: 10px;
+  margin-bottom: 6px;
+}
+
+.demo-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%; flex-shrink: 0;
+}
+
+.demo-row-text {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--t1);
+  flex: 1;
+}
+
+.demo-row-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t4);
+}
+
+.demo-numbers {
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.demo-num-item { text-align: center; }
+
+.demo-num {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  display: inline-block;
+  background-image: linear-gradient(135deg, #4d7cff, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.demo-num-lbl {
+  font-size: 10px;
+  color: var(--t3);
+  margin-top: 2px;
+}
+
+.demo-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--t1);
+  margin-bottom: 2px;
+}
+
+/* ─── Per-font families ─── */
+.f-geist     { font-family: 'Geist', sans-serif; }
+.f-onest     { font-family: 'Onest', sans-serif; }
+.f-sgrotesk  { font-family: 'Space Grotesk', sans-serif; }
+.f-manrope   { font-family: 'Manrope', sans-serif; }
+.f-bricolage { font-family: 'Bricolage Grotesque', sans-serif; }
+.f-outfit    { font-family: 'Outfit', sans-serif; }
+
+/* ─── Top-bar gradients unique per font ─── */
+.bar-geist     { background: linear-gradient(90deg, #4d7cff, #8b5cf6); }
+.bar-onest     { background: linear-gradient(90deg, #22d3ee, #4d7cff); }
+.bar-sgrotesk  { background: linear-gradient(90deg, #8b5cf6, #ec4899); }
+.bar-manrope   { background: linear-gradient(90deg, #34d399, #4d7cff); }
+.bar-bricolage { background: linear-gradient(90deg, #ec4899, #f97316); }
+.bar-outfit    { background: linear-gradient(90deg, #fbbf24, #34d399); }
+
+/* ─── Recommended badge ─── */
+.recommended {
+  position: absolute;
+  top: 14px; right: 14px;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, rgba(77,124,255,0.2), rgba(139,92,246,0.15));
+  color: #8b9fff;
+  border: 1px solid rgba(77,124,255,0.25);
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+/* page footer */
+.footer {
+  margin-top: 40px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--t4);
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<h1>FeatureHub — Font Comparison</h1>
+<p class="page-sub">Same UI elements · 6 fonts · All load from Google Fonts · JetBrains Mono stays for code</p>
+
+<div class="grid">
+
+  <!-- ─── 1. GEIST ─── -->
+  <div class="fc f-geist">
+    <div class="recommended">Top pick</div>
+    <div class="fc-bar bar-geist"></div>
+    <div class="fc-header">
+      <span class="fc-name">Geist</span>
+      <span class="fc-tag">by Vercel · 2024</span>
+    </div>
+    <div class="fc-body">
+      <div class="demo-label">Current feature</div>
+      <div class="demo-heading">Auth System <span class="accent">Redesign</span></div>
+      <div class="demo-sub">AUTH-42 · Updated 2 hours ago</div>
+
+      <div class="demo-pills">
+        <span class="pill pill-amber">In Progress</span>
+        <span class="pill pill-blue">backend</span>
+        <span class="pill pill-pink">security</span>
+      </div>
+
+      <div class="demo-body">Migrate from session-based auth to JWT with refresh tokens. Includes OAuth2 provider support and updated RBAC model.</div>
+
+      <div class="demo-divider"></div>
+
+      <div class="demo-card-title">Session History</div>
+      <div style="margin-top:8px">
+        <div class="demo-row">
+          <div class="demo-dot" style="background:#34d399;box-shadow:0 0 6px rgba(52,211,153,0.5)"></div>
+          <span class="demo-row-text">Refresh token rotation</span>
+          <span class="demo-row-meta">12m</span>
+        </div>
+        <div class="demo-row">
+          <div class="demo-dot" style="background:#272e4a"></div>
+          <span class="demo-row-text">JWT token generation</span>
+          <span class="demo-row-meta">45m</span>
+        </div>
+      </div>
+
+      <div class="demo-numbers">
+        <div class="demo-num-item">
+          <div class="demo-num f-geist">3</div>
+          <div class="demo-num-lbl">Tasks done</div>
+        </div>
+        <div class="demo-num-item">
+          <div class="demo-num f-geist" style="background-image:linear-gradient(135deg,#34d399,#22d3ee)">2</div>
+          <div class="demo-num-lbl">Sessions</div>
+        </div>
+        <div class="demo-num-item">
+          <div class="demo-num f-geist" style="background-image:linear-gradient(135deg,#fbbf24,#f97316)">1</div>
+          <div class="demo-num-lbl">Plan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 2. ONEST ─── -->
+  <div class="fc f-onest">
+    <div class="fc-bar bar-onest"></div>
+    <div class="fc-header">
+      <span class="fc-name">Onest</span>
+      <span class="fc-tag">warm geometric</span>
+    </div>
+    <div class="fc-body">
+      <div class="demo-label">Current feature</div>
+      <div class="demo-heading">Auth System <span class="accent">Redesign</span></div>
+      <div class="demo-sub">AUTH-42 · Updated 2 hours ago</div>
+
+      <div class="demo-pills">
+        <span class="pill pill-amber">In Progress</span>
+        <span class="pill pill-blue">backend</span>
+        <span class="pill pill-pink">security</span>
+      </div>
+
+      <div class="demo-body">Migrate from session-based auth to JWT with refresh tokens. Includes OAuth2 provider support and updated RBAC model.</div>
+
+      <div class="demo-divider"></div>
+
+      <div class="demo-card-title">Session History</div>
+      <div style="margin-top:8px">
+        <div class="demo-row">
+          <div class="demo-dot" style="background:#34d399;box-shadow:0 0 6px rgba(52,211,153,0.5)"></div>
+          <span class="demo-row-text">Refresh token rotation</span>
+          <span class="demo-row-meta">12m</span>
+        </div>
+        <div class="demo-row">
+          <div class="demo-dot" style="background:#272e4a"></div>
+          <span class="demo-row-text">JWT token generation</span>
+          <span class="demo-row-meta">45m</span>
+        </div>
+      </div>
+
+      <div class="demo-numbers">
+        <div class="demo-num-item">
+          <div class="demo-num f-onest">3</div>
+          <div class="demo-num-lbl">Tasks done</div>
+        </div>
+        <div class="demo-num-item">
+          <div class="demo-num f-onest" style="background-image:linear-gradient(135deg,#34d399,#22d3ee)">2</div>
+          <div class="demo-num-lbl">Sessions</div>
+        </div>
+        <div class="demo-num-item">
+          <div class="demo-num f-onest" style="background-image:linear-gradient(135deg,#fbbf24,#f97316)">1</div>
+          <div class="demo-num-lbl">Plan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 3. SPACE GROTESK ─── -->
+  <div class="fc f-sgrotesk">
+    <div class="fc-bar bar-sgrotesk"></div>
+    <div class="fc-header">
+      <span class="fc-name">Space Grotesk</span>
+      <span class="fc-tag">techy · quirky</span>
+    </div>
+    <div class="fc-body">
+      <div class="demo-label">Current feature</div>
+      <div class="demo-heading" style="letter-spacing:-0.02em">Auth System <span class="accent">Redesign</span></div>
+      <div class="demo-sub">AUTH-42 · Updated 2 hours ago</div>
+
+      <div class="demo-pills">
+        <span class="pill pill-amber">In Progress</span>
+        <span class="pill pill-blue">backend</span>
+        <span class="pill pill-pink">security</span>
+      </div>
+
+      <div class="demo-body">Migrate from session-based auth to JWT with refresh tokens. Includes OAuth2 provider support and updated RBAC model.</div>
+
+      <div class="demo-divider"></div>
+
+      <div class="demo-card-title">Session History</div>
+      <div style="margin-top:8px">
+        <div class="demo-row">
+          <div class="demo-dot" style="background:#34d399;box-shadow:0 0 6px rgba(52,211,153,0.5)"></div>
+          <span class="demo-row-text">Refresh token rotation</span>
+          <span class="demo-row-meta">12m</span>
+        </div>
+        <div class="demo-row">
+          <div class="demo-dot" style="background:#272e4a"></div>
+          <span class="demo-row-text">JWT token generation</span>
+          <span class="demo-row-meta">45m</span>
+        </div>
+      </div>
+
+      <div class="demo-numbers">
+        <div class="demo-num-item">
+          <div class="demo-num f-sgrotesk">3</div>
+          <div class="demo-num-lbl">Tasks done</div>
+        </div>
+        <div class="demo-num-item">
+          <div class="demo-num f-sgrotesk" style="background-image:linear-gradient(135deg,#34d399,#22d3ee)">2</div>
+          <div class="demo-num-lbl">Sessions</div>
+        </div>
+        <div class="demo-num-item">
+          <div class="demo-num f-sgrotesk" style="background-image:linear-gradient(135deg,#fbbf24,#f97316)">1</div>
+          <div class="demo-num-lbl">Plan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 4. MANROPE ─── -->
+  <div class="fc f-manrope">
+    <div class="fc-bar bar-manrope"></div>
+    <div class="fc-header">
+      <span class="fc-name">Manrope</span>
+      <span class="fc-tag">refined · neutral</span>
+    </div>
+    <div class="fc-body">
+      <div class="demo-label">Current feature</div>
+      <div class="demo-heading">Auth System <span class="accent">Redesign</span></div>
+      <div class="demo-sub">AUTH-42 · Updated 2 hours ago</div>
+
+      <div class="demo-pills">
+        <span class="pill pill-amber">In Progress</span>
+        <span class="pill pill-blue">backend</span>
+        <span class="pill pill-pink">security</span>
+      </div>
+
+      <div class="demo-body">Migrate from session-based auth to JWT with refresh tokens. Includes OAuth2 provider support and updated RBAC model.</div>
+
+      <div class="demo-divider"></div>
+
+      <div class="demo-card-title">Session History</div>
+      <div style="margin-top:8px">
+        <div class="demo-row">
+          <div class="demo-dot" style="background:#34d399;box-shadow:0 0 6px rgba(52,211,153,0.5)"></div>
+          <span class="demo-row-text">Refresh token rotation</span>
+          <span class="demo-row-meta">12m</span>
+        </div>
+        <div class="demo-row">
+          <div class="demo-dot" style="background:#272e4a"></div>
+          <span class="demo-row-text">JWT token generation</span>
+          <span class="demo-row-meta">45m</span>
+        </div>
+      </div>
+
+      <div class="demo-numbers">
+        <div class="demo-num-item">
+          <div class="demo-num f-manrope">3</div>
+          <div class="demo-num-lbl">Tasks done</div>
+        </div>
+        <div class="demo-num-item">
+          <div class="demo-num f-manrope" style="background-image:linear-gradient(135deg,#34d399,#22d3ee)">2</div>
+          <div class="demo-num-lbl">Sessions</div>
+        </div>
+        <div class="demo-num-item">
+          <div class="demo-num f-manrope" style="background-image:linear-gradient(135deg,#fbbf24,#f97316)">1</div>
+          <div class="demo-num-lbl">Plan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 5. BRICOLAGE GROTESQUE ─── -->
+  <div class="fc f-bricolage">
+    <div class="fc-bar bar-bricolage"></div>
+    <div class="fc-header">
+      <span class="fc-name">Bricolage Grotesque</span>
+      <span class="fc-tag">editorial · bold</span>
+    </div>
+    <div class="fc-body">
+      <div class="demo-label">Current feature</div>
+      <div class="demo-heading" style="letter-spacing:-0.04em">Auth System <span class="accent">Redesign</span></div>
+      <div class="demo-sub">AUTH-42 · Updated 2 hours ago</div>
+
+      <div class="demo-pills">
+        <span class="pill pill-amber">In Progress</span>
+        <span class="pill pill-blue">backend</span>
+        <span class="pill pill-pink">security</span>
+      </div>
+
+      <div class="demo-body">Migrate from session-based auth to JWT with refresh tokens. Includes OAuth2 provider support and updated RBAC model.</div>
+
+      <div class="demo-divider"></div>
+
+      <div class="demo-card-title">Session History</div>
+      <div style="margin-top:8px">
+        <div class="demo-row">
+          <div class="demo-dot" style="background:#34d399;box-shadow:0 0 6px rgba(52,211,153,0.5)"></div>
+          <span class="demo-row-text">Refresh token rotation</span>
+          <span class="demo-row-meta">12m</span>
+        </div>
+        <div class="demo-row">
+          <div class="demo-dot" style="background:#272e4a"></div>
+          <span class="demo-row-text">JWT token generation</span>
+          <span class="demo-row-meta">45m</span>
+        </div>
+      </div>
+
+      <div class="demo-numbers">
+        <div class="demo-num-item">
+          <div class="demo-num f-bricolage">3</div>
+          <div class="demo-num-lbl">Tasks done</div>
+        </div>
+        <div class="demo-num-item">
+          <div class="demo-num f-bricolage" style="background-image:linear-gradient(135deg,#34d399,#22d3ee)">2</div>
+          <div class="demo-num-lbl">Sessions</div>
+        </div>
+        <div class="demo-num-item">
+          <div class="demo-num f-bricolage" style="background-image:linear-gradient(135deg,#fbbf24,#f97316)">1</div>
+          <div class="demo-num-lbl">Plan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 6. OUTFIT ─── -->
+  <div class="fc f-outfit">
+    <div class="fc-bar bar-outfit"></div>
+    <div class="fc-header">
+      <span class="fc-name">Outfit</span>
+      <span class="fc-tag">clean · safe</span>
+    </div>
+    <div class="fc-body">
+      <div class="demo-label">Current feature</div>
+      <div class="demo-heading">Auth System <span class="accent">Redesign</span></div>
+      <div class="demo-sub">AUTH-42 · Updated 2 hours ago</div>
+
+      <div class="demo-pills">
+        <span class="pill pill-amber">In Progress</span>
+        <span class="pill pill-blue">backend</span>
+        <span class="pill pill-pink">security</span>
+      </div>
+
+      <div class="demo-body">Migrate from session-based auth to JWT with refresh tokens. Includes OAuth2 provider support and updated RBAC model.</div>
+
+      <div class="demo-divider"></div>
+
+      <div class="demo-card-title">Session History</div>
+      <div style="margin-top:8px">
+        <div class="demo-row">
+          <div class="demo-dot" style="background:#34d399;box-shadow:0 0 6px rgba(52,211,153,0.5)"></div>
+          <span class="demo-row-text">Refresh token rotation</span>
+          <span class="demo-row-meta">12m</span>
+        </div>
+        <div class="demo-row">
+          <div class="demo-dot" style="background:#272e4a"></div>
+          <span class="demo-row-text">JWT token generation</span>
+          <span class="demo-row-meta">45m</span>
+        </div>
+      </div>
+
+      <div class="demo-numbers">
+        <div class="demo-num-item">
+          <div class="demo-num f-outfit">3</div>
+          <div class="demo-num-lbl">Tasks done</div>
+        </div>
+        <div class="demo-num-item">
+          <div class="demo-num f-outfit" style="background-image:linear-gradient(135deg,#34d399,#22d3ee)">2</div>
+          <div class="demo-num-lbl">Sessions</div>
+        </div>
+        <div class="demo-num-item">
+          <div class="demo-num f-outfit" style="background-image:linear-gradient(135deg,#fbbf24,#f97316)">1</div>
+          <div class="demo-num-lbl">Plan</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="footer">
+  All fonts from Google Fonts · Monospace always JetBrains Mono · Tell me which one and I'll swap it into the main prototype
+</p>
+
+</body>
+</html>

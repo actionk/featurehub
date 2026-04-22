@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicegui/nicegui-tauri/main/nicegui-app/src-tauri/gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for Feature Hub",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "shell:default",
+    "fs:default",
+    "window-state:default"
+  ]
+}

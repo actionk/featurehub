@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FeatureHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #09090b;
+      color: #fafafa;
+      overflow: hidden;
+    }
+
+    .slide {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      padding: 60px 100px;
+      text-align: center;
+      position: relative;
+    }
+
+    .slide.active {
+      display: flex;
+      animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Ambient glow */
+    .slide::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 600px;
+      background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+      filter: blur(60px);
+    }
+
+    h1 {
+      font-size: 6rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 40%, #6d28d9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1.5rem;
+      line-height: 1.1;
+    }
+
+    h2 {
+      font-size: 3.2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #fafafa;
+      margin-bottom: 1rem;
+    }
+
+    .subtitle {
+      font-size: 1.3rem;
+      color: #71717a;
+      margin-bottom: 3rem;
+      max-width: 600px;
+    }
+
+    .tagline {
+      font-size: 1.6rem;
+      font-weight: 400;
+      color: #a1a1aa;
+      max-width: 700px;
+      line-height: 1.7;
+    }
+
+    .personal-note {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #71717a;
+      margin-bottom: 1rem;
+    }
+
+    .tagline strong {
+      color: #e4e4e7;
+      font-weight: 500;
+    }
+
+    /* Problem slide */
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .problem-grid-3 {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.2rem;
+    }
+
+    .problem-grid-3 .problem-card {
+      padding: 1.5rem 1.2rem;
+    }
+
+    .problem-grid-3 .problem-card h3 {
+      font-size: 1.05rem;
+    }
+
+    .problem-grid-3 .problem-card p {
+      font-size: 0.9rem;
+    }
+
+    .problem-grid-3 .problem-card .icon {
+      font-size: 2rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .problem-card {
+      background: linear-gradient(145deg, rgba(39, 39, 42, 0.8) 0%, rgba(24, 24, 27, 0.8) 100%);
+      border: 1px solid rgba(63, 63, 70, 0.5);
+      border-radius: 20px;
+      padding: 2.5rem 2rem;
+      text-align: left;
+      backdrop-filter: blur(10px);
+    }
+
+    .problem-card .icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .problem-card h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #fafafa;
+      margin-bottom: 0.75rem;
+    }
+
+    .problem-card p {
+      font-size: 1rem;
+      color: #a1a1aa;
+      line-height: 1.6;
+    }
+
+    /* Feature pills */
+    .feature-row {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .feature-pill {
+      background: linear-gradient(145deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      padding: 1rem 1.8rem;
+      border-radius: 100px;
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: #c4b5fd;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .feature-pill .icon {
+      font-size: 1.2rem;
+    }
+
+    /* Hub visual */
+    .hub-visual {
+      position: relative;
+      width: 500px;
+      height: 360px;
+      margin: 1rem 0;
+    }
+
+    .hub-visual::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 320px;
+      height: 320px;
+      border: 1px dashed rgba(139, 92, 246, 0.25);
+      border-radius: 50%;
+    }
+
+    .hub-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 140px;
+      height: 140px;
+      background: linear-gradient(145deg, #8b5cf6 0%, #6d28d9 100%);
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 60px rgba(139, 92, 246, 0.4);
+      z-index: 2;
+    }
+
+    .hub-center-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .hub-center-label {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: white;
+    }
+
+    .hub-spoke {
+      position: absolute;
+      background: rgba(39, 39, 42, 0.8);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 12px;
+      padding: 0.8rem 1.2rem;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #e4e4e7;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+    }
+
+    .hub-spoke span {
+      font-size: 1.2rem;
+    }
+
+    .hub-spoke-1 { top: 0; left: 50%; transform: translateX(-50%); }
+    .hub-spoke-2 { top: 20%; left: 5%; }
+    .hub-spoke-3 { top: 20%; right: 5%; }
+    .hub-spoke-4 { bottom: 20%; left: 5%; }
+    .hub-spoke-5 { bottom: 20%; right: 5%; }
+    .hub-spoke-6 { bottom: 0; left: 50%; transform: translateX(-50%); }
+
+    .hub-tagline {
+      font-size: 1.2rem;
+      color: #a1a1aa;
+      margin-top: 1rem;
+    }
+
+    /* Stack badges */
+    .stack-badges {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stack-badge {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #a1a1aa;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.6rem 1.2rem;
+      border-radius: 100px;
+    }
+
+    /* Stack grid */
+    .stack-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .stack-card {
+      background: linear-gradient(145deg, rgba(39, 39, 42, 0.6) 0%, rgba(24, 24, 27, 0.6) 100%);
+      border: 1px solid rgba(63, 63, 70, 0.4);
+      border-radius: 16px;
+      padding: 2rem 2.5rem;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .stack-card .icon {
+      font-size: 2.2rem;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(139, 92, 246, 0.1);
+      border-radius: 12px;
+    }
+
+    .stack-card .content {
+      flex: 1;
+    }
+
+    .stack-card .label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #71717a;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.3rem;
+    }
+
+    .stack-card .value {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #fafafa;
+    }
+
+    .stack-card .desc {
+      font-size: 0.95rem;
+      color: #71717a;
+      margin-top: 0.25rem;
+    }
+
+    /* Demo slide */
+    .demo-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .demo-badge {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #8b5cf6;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      padding: 0.6rem 1.5rem;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 100px;
+    }
+
+    .demo-text {
+      font-size: 4rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fafafa 0%, #a1a1aa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .demo-points {
+      display: flex;
+      gap: 3rem;
+      margin-top: 1rem;
+    }
+
+    .demo-point {
+      font-size: 1.1rem;
+      color: #71717a;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .demo-point::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: #8b5cf6;
+      border-radius: 50%;
+    }
+
+    /* CTA slide */
+    .cta-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .cta-badge {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #f59e0b;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 0.5rem 1.2rem;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: 100px;
+    }
+
+    .cta-headline {
+      font-size: 3.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fafafa 0%, #d4d4d8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .cta-sub {
+      font-size: 1.35rem;
+      color: #71717a;
+      max-width: 550px;
+      line-height: 1.7;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(39, 39, 42, 0.8);
+      color: #fafafa;
+      border: 1px solid rgba(63, 63, 70, 0.5);
+    }
+
+    .btn-secondary:hover {
+      border-color: #8b5cf6;
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    .btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    /* Progress */
+    .progress {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      background: rgba(24, 24, 27, 0.8);
+      padding: 8px 16px;
+      border-radius: 100px;
+      border: 1px solid rgba(63, 63, 70, 0.3);
+      backdrop-filter: blur(10px);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3f3f46;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .dot:hover {
+      background: #52525b;
+    }
+
+    .dot.active {
+      background: #8b5cf6;
+      box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+    }
+
+    .slide-number {
+      position: fixed;
+      bottom: 32px;
+      left: 32px;
+      color: #3f3f46;
+      font-size: 0.85rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .nav-hint {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      color: #3f3f46;
+      font-size: 0.85rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .key {
+      background: rgba(39, 39, 42, 0.8);
+      border: 1px solid #3f3f46;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 1: Title -->
+  <div class="slide active">
+    <p class="personal-note">A personal project I've been building for the last few months</p>
+    <h1>FeatureHub</h1>
+    <p class="tagline">
+      The missing layer between your features and your AI —
+      built for developers shipping with Claude.
+    </p>
+  </div>
+
+  <!-- Slide 2: The Problem -->
+  <div class="slide">
+    <h2>The Problem</h2>
+    <p class="subtitle">We've all been here...</p>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="icon">🔀</div>
+        <h3>Context Scattered</h3>
+        <p>Jira, GitHub, Figma, Slack, Notion — browser tabs everywhere, nothing connects them.</p>
+      </div>
+      <div class="problem-card">
+        <div class="icon">🧠</div>
+        <h3>AI Amnesia</h3>
+        <p>Every Claude session starts from scratch. You explain the same context over and over.</p>
+      </div>
+      <div class="problem-card">
+        <div class="icon">🔍</div>
+        <h3>Sessions Hard to Find</h3>
+        <p>Which session was working on what? Claude's /resume is folder-specific — good luck finding last week's.</p>
+      </div>
+      <div class="problem-card">
+        <div class="icon">🔄</div>
+        <h3>Overlapping Work</h3>
+        <p>Multiple features in the same repo at the same time. Which session was for which?</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 3: The Solution -->
+  <div class="slide">
+    <h2>One Hub Per Feature</h2>
+    <p class="subtitle">Everything connected. Context preserved.</p>
+    <div class="hub-visual">
+      <div class="hub-spoke hub-spoke-1"><span>🔗</span> Links</div>
+      <div class="hub-spoke hub-spoke-2"><span>✅</span> Tasks</div>
+      <div class="hub-spoke hub-spoke-3"><span>📂</span> Repos</div>
+      <div class="hub-center">
+        <div class="hub-center-icon">⭐</div>
+        <div class="hub-center-label">Feature</div>
+      </div>
+      <div class="hub-spoke hub-spoke-4"><span>📝</span> Notes</div>
+      <div class="hub-spoke hub-spoke-5"><span>📁</span> Files</div>
+      <div class="hub-spoke hub-spoke-6"><span>🤖</span> AI Context</div>
+    </div>
+    <p class="hub-tagline">Write context once → Every Claude session gets it automatically</p>
+  </div>
+
+  <!-- Slide 4: Tech Stack -->
+  <div class="slide">
+    <h2>Tech Stack</h2>
+    <p class="subtitle">Modern, fast, and portable</p>
+    <div class="stack-badges">
+      <div class="stack-badge">🤖 Fully written with Claude</div>
+      <div class="stack-badge">🖥️ macOS + Windows</div>
+    </div>
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="icon">🦀</div>
+        <div class="content">
+          <div class="label">Desktop Shell</div>
+          <div class="value">Tauri 2 + Rust</div>
+          <div class="desc">Lightweight, secure, cross-platform</div>
+        </div>
+      </div>
+      <div class="stack-card">
+        <div class="icon">⚡</div>
+        <div class="content">
+          <div class="label">Frontend</div>
+          <div class="value">Svelte 5 + TypeScript</div>
+          <div class="desc">Reactive, fast, runes-based</div>
+        </div>
+      </div>
+      <div class="stack-card">
+        <div class="icon">🗄️</div>
+        <div class="content">
+          <div class="label">Storage</div>
+          <div class="value">SQLite + FTS5</div>
+          <div class="desc">Local-first, full-text search</div>
+        </div>
+      </div>
+      <div class="stack-card">
+        <div class="icon">🔌</div>
+        <div class="content">
+          <div class="label">AI Integration</div>
+          <div class="value">MCP Protocol</div>
+          <div class="desc">Claude reads & writes features directly</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5: Demo -->
+  <div class="slide">
+    <div class="demo-container">
+      <div class="demo-badge">Interactive</div>
+      <div class="demo-text">Live Demo</div>
+      <div class="demo-points">
+        <div class="demo-point">Desktop App</div>
+        <div class="demo-point">CLI Workflow</div>
+        <div class="demo-point">MCP in Action</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 6: CTA -->
+  <div class="slide">
+    <div class="cta-container">
+      <div class="cta-badge">Early Access</div>
+      <div class="cta-headline">Want to Try It?</div>
+      <p class="cta-sub">
+        Not public yet — but if you're interested in trying it out or contributing, reach out and I'll get you access.
+      </p>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress" id="progress"></div>
+  <div class="slide-number" id="slideNumber">1 / 6</div>
+  <div class="nav-hint"><span class="key">←</span> <span class="key">→</span> navigate</div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const slideNumber = document.getElementById('slideNumber');
+    let current = 0;
+
+    const progress = document.getElementById('progress');
+    slides.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'dot' + (i === 0 ? ' active' : '');
+      dot.onclick = () => goTo(i);
+      progress.appendChild(dot);
+    });
+
+    function goTo(n) {
+      slides[current].classList.remove('active');
+      progress.children[current].classList.remove('active');
+      current = (n + slides.length) % slides.length;
+      slides[current].classList.add('active');
+      progress.children[current].classList.add('active');
+      slideNumber.textContent = `${current + 1} / ${slides.length}`;
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') goTo(current + 1);
+      if (e.key === 'ArrowLeft') goTo(current - 1);
+    });
+
+    let touchStartX = 0;
+    document.addEventListener('touchstart', (e) => touchStartX = e.touches[0].clientX);
+    document.addEventListener('touchend', (e) => {
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 50) goTo(current + (diff > 0 ? 1 : -1));
+    });
+  </script>
+</body>
+</html>
