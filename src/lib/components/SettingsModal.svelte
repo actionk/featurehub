@@ -546,6 +546,24 @@
               Display emoji icons next to tab labels in the feature detail view.
             </div>
           </div>
+
+          <div class="settings-section" style="margin-top: 20px;">
+            <h3 class="settings-section-title">Markdown Rendering</h3>
+            <label class="settings-toggle">
+              <input type="checkbox" bind:checked={mermaidDiagrams} />
+              <span class="settings-toggle-label">Mermaid Diagrams</span>
+            </label>
+            <div class="settings-field-desc">
+              Render <code>```mermaid</code> code blocks as interactive SVG diagrams in notes, context, and file previews.
+            </div>
+            <label class="settings-toggle" style="margin-top: 12px;">
+              <input type="checkbox" bind:checked={openfgaHighlighting} />
+              <span class="settings-toggle-label">OpenFGA Highlighting</span>
+            </label>
+            <div class="settings-field-desc">
+              Syntax highlight <code>.fga</code> / <code>.openfga</code> files and <code>```openfga</code> code blocks in markdown content.
+            </div>
+          </div>
         </div>
       {/if}
 
@@ -747,47 +765,10 @@
         <div class="settings-panel settings-panel--wide">
           <div class="settings-panel-header">
             <h2 class="settings-panel-title">Extensions</h2>
-            <p class="settings-panel-desc">Enable integrations and rendering extensions.</p>
+            <p class="settings-panel-desc">Manage installed extensions.</p>
             {#if storageName}<p class="settings-storage-hint">Configured per storage. Currently editing: <strong>{storageName}</strong></p>{/if}
           </div>
 
-          <div class="extensions-grid">
-          <div class="extension-card">
-            <div class="extension-card__header">
-              <div class="extension-card__info">
-                <span class="extension-card__name">Mermaid Diagrams</span>
-                <span class="extension-card__badge">Rendering</span>
-              </div>
-              <label class="settings-toggle">
-                <input type="checkbox" bind:checked={mermaidDiagrams} />
-              </label>
-            </div>
-            <div class="extension-card__desc">
-              Render Mermaid diagram code blocks as interactive SVG diagrams in markdown previews — notes, context, and file previews. Supports flowcharts, sequence diagrams, class diagrams, and more.
-            </div>
-            <div class="extension-card__hint">
-              Use <code>```mermaid</code> fenced code blocks in any markdown content.
-            </div>
-          </div>
-
-          <div class="extension-card">
-            <div class="extension-card__header">
-              <div class="extension-card__info">
-                <span class="extension-card__name">OpenFGA Highlighting</span>
-                <span class="extension-card__badge">Rendering</span>
-              </div>
-              <label class="settings-toggle">
-                <input type="checkbox" bind:checked={openfgaHighlighting} />
-              </label>
-            </div>
-            <div class="extension-card__desc">
-              Syntax highlight OpenFGA authorization model files (.fga, .openfga) in file previews, and render <code>```openfga</code> / <code>```fga</code> fenced code blocks with highlighting in markdown content.
-            </div>
-            <div class="extension-card__hint">
-              Keywords, types, relations, operators, and comments are color-coded for readability.
-            </div>
-          </div>
-          </div>
           <InstalledExtensionsPanel />
         </div>
       {/if}
