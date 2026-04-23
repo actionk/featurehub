@@ -618,26 +618,23 @@ button:focus-visible, .btn:focus-visible, .list-row:focus-visible, .tab:focus-vi
   padding: 6px var(--space-3);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background var(--dur-fast) var(--ease);
   margin-bottom: 0;
   width: 100%;
   text-align: left;
   border: none;
-  border-left: 3px solid transparent;
   background: transparent;
   font-family: inherit;
 }
 
 .feature-item:hover { background: var(--bg-hover); }
-.feature-item--selected {
-  background: color-mix(in srgb, var(--accent) 10%, var(--bg-hover));
-  border-left-color: color-mix(in srgb, var(--accent) 60%, transparent) !important;
-}
-/* When a session is being viewed under this feature, dim the feature row highlight */
+.feature-item--selected { background: var(--accent-dim); }
 .feature-item--selected.feature-item--session-active {
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
-  border-left-color: color-mix(in srgb, var(--accent) 40%, transparent) !important;
+  background: rgba(167,139,250,0.06);
 }
+/* Suppress primitive extras on feature rows — single subtle bg is enough */
+.feature-item.list-row--active::before { display: none; }
+.feature-item.list-row--active { box-shadow: none; }
 .feature-item--archived { opacity: 0.5; }
 
 .pin-icon { flex-shrink: 0; }
@@ -795,14 +792,7 @@ button:focus-visible, .btn:focus-visible, .list-row:focus-visible, .tab:focus-vi
   border-radius: var(--radius);
 }
 
-/* ── Status border stripe ── */
-.feature-item--status-todo { border-left-color: var(--text-faint); }
-.feature-item--status-in_progress { border-left-color: var(--amber); }
-.feature-item--status-in_review { border-left-color: var(--blue); }
-.feature-item--status-done { border-left-color: var(--green); }
-.feature-item--status-active { border-left-color: var(--accent); }
-.feature-item--status-blocked { border-left-color: var(--red); }
-.feature-item--status-paused { border-left-color: var(--purple); }
+/* Status stripe removed — status conveyed by the dot only */
 
 /* ── Task progress bar (mini) ── */
 .task-progress-bar {
