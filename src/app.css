@@ -632,9 +632,18 @@ button:focus-visible, .btn:focus-visible, .list-row:focus-visible, .tab:focus-vi
 .feature-item--selected.feature-item--session-active {
   background: rgba(167,139,250,0.06);
 }
-/* Suppress primitive extras on feature rows — single subtle bg is enough */
-.feature-item.list-row--active::before { display: none; }
-.feature-item.list-row--active { box-shadow: none; }
+
+/* Kill primitive `.list-row--active` decoration for sidebar rows.
+   The outer .feature-item--selected provides the selection fill; no rails. */
+.feature-item .list-row--active,
+.feature-item.list-row--active,
+.feature-item-compact.list-row--active {
+  background: transparent;
+  box-shadow: none;
+}
+.feature-item .list-row--active::before,
+.feature-item.list-row--active::before,
+.feature-item-compact.list-row--active::before { display: none; }
 .feature-item--archived { opacity: 0.5; }
 
 .pin-icon { flex-shrink: 0; }
@@ -917,21 +926,19 @@ button:focus-visible, .btn:focus-visible, .list-row:focus-visible, .tab:focus-vi
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 7px 10px;
-  margin-top: 6px;
+  padding: 10px 10px 4px;
+  margin-top: 4px;
   cursor: pointer;
   user-select: none;
-  background: var(--bg-hover);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border-subtle);
-  transition: background 0.1s;
+  background: transparent;
+  border: none;
+  transition: color var(--dur-fast) var(--ease);
 }
 .group-header:first-child {
-  border-top: none;
   margin-top: 0;
 }
-.group-header:hover {
-  background: var(--bg-active);
+.group-header:hover .group-name {
+  color: var(--accent-hover);
 }
 .group-header--drop {
   background: var(--accent-dim);
@@ -4920,11 +4927,9 @@ a.jira-task-key:hover {
 
 .feature-session-item--viewing {
   background: var(--accent-dim);
-  border-left: 3px solid var(--accent);
-  padding-left: 0;
 }
 .feature-session-item--viewing:hover {
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  background: color-mix(in srgb, var(--accent-hover) 18%, transparent);
 }
 .feature-session-item--viewing .feature-session-main {
   color: var(--text-primary);
