@@ -4,7 +4,7 @@
   import StorageSelector from "./StorageSelector.svelte";
   import { formatRelativeTime } from "../utils/format";
   import { getActiveTerminals, getViewingTerminal } from "../stores/terminals.svelte";
-  import { getActiveCountForFeature } from "../stores/sessionActivity.svelte";
+  import { getActiveCountForFeature, isAnySessionWaitingForFeature } from "../stores/sessionActivity.svelte";
 
   let {
     features,
@@ -798,7 +798,7 @@
   </div>
 
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="search-trigger" onclick={() => onOpenSearch?.()}
+  <div class="search-trigger input input--search" onclick={() => onOpenSearch?.()}
     onkeydown={(e) => { if (e.key === 'Enter') onOpenSearch?.(); }}
   >
     <svg width="13" height="13" viewBox="0 0 16 16" fill="var(--text-muted)">
@@ -918,8 +918,11 @@
                     <path d="M9.828.722a.5.5 0 01.354.146l4.95 4.95a.5.5 0 01-.707.707l-.707-.707-3.182 3.182a3.5 3.5 0 01-.564.41l-2.05 1.166a.5.5 0 01-.639-.112l-.41-.41-3.96 3.96a.5.5 0 01-.707-.707l3.96-3.96-.41-.41a.5.5 0 01-.112-.639l1.166-2.05a3.5 3.5 0 01.41-.564l3.182-3.182-.707-.707a.5.5 0 01.146-.854z"/>
                   </svg>
                 {/if}
-                  <div class="feature-item-compact">
-                    <span class="feature-item-status-dot" style="background: {statusColors[feature.status] ?? 'var(--text-muted)'};"></span>
+                  <div
+                    class="feature-item-compact list-row"
+                    class:list-row--active={selectedId === feature.id}
+                  >
+                    <span class="feature-item-status-dot" style="background: {statusColors[feature.status] ?? 'var(--text-muted)'}; color: {statusColors[feature.status] ?? 'var(--text-muted)'};"></span>
                     <span class="feature-item-title">{feature.title}</span>
                     {#if (feature.task_count_total ?? 0) > 0}
                       <div class="feature-item-pmb">
@@ -931,8 +934,13 @@
                     {/if}
                     {#if getActiveCountForFeature(feature.id) > 0}
                       {@const count = getActiveCountForFeature(feature.id)}
+                      {@const waiting = isAnySessionWaitingForFeature(feature.id)}
                       <!-- svelte-ignore a11y_no_static_element_interactions -->
-                      <span class="active-sessions-badge" title="{count} active session{count > 1 ? 's' : ''} — click to open"
+                      <span
+                        class="active-sessions-badge aurora-pill"
+                        class:aurora-pill--success={!waiting}
+                        class:aurora-pill--warn={waiting}
+                        title={`${count} active session${count > 1 ? 's' : ''}${waiting ? ' (awaiting input)' : ''} — click to open`}
                         role="button"
                         tabindex="-1"
                         onclick={(e: MouseEvent) => {
@@ -950,7 +958,7 @@
                         }}
                         onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter') { e.stopPropagation(); const terms = terminalsByFeature.get(feature.id); if (terms && terms.length > 0) { onSelectTerminal?.(feature.id, terms[0].terminalId); } else { onSelectSessions?.(feature.id); } } }}
                       >
-                        <span class="active-sessions-dot"></span>{count}
+                        <span class="live-dot" class:live-dot--warn={waiting}></span>{count}
                       </span>
                     {/if}
                     {#if node.hasChildren}

@@ -392,10 +392,14 @@ button:focus-visible {
   width: 272px;
   min-width: 272px;
   height: 100%;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
+  background: var(--bg-sidebar);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  position: relative;
 }
 
 .sidebar-header {
@@ -652,14 +656,22 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: 6px;
+  font-weight: var(--font-weight-medium);
+}
+.feature-item-compact .feature-item-title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .feature-item-status-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
-  transition: background var(--transition-fast);
+  box-shadow: 0 0 6px currentColor;
 }
 
 .feature-item-pmb {
@@ -670,29 +682,31 @@ button:focus-visible {
 }
 
 .feature-item-pmb-track {
-  width: 26px;
+  width: 24px;
   height: 3px;
-  background: rgba(255, 255, 255, 0.07);
   border-radius: 2px;
+  background: rgba(255,255,255,0.08);
   overflow: hidden;
 }
 
 .feature-item-pmb-fill {
   height: 100%;
-  background: var(--accent);
+  background: var(--accent-grad-cool);
   border-radius: 2px;
-  min-width: 2px;
+  box-shadow: 0 0 6px rgba(167,139,250,0.5);
+  transition: width var(--dur-slow) var(--ease);
 }
 
 .feature-item-pmb-label {
-  font-size: 9px;
+  font-size: 9.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
   font-family: var(--font-mono);
-  color: var(--text-faint);
 }
 
 .feature-item-title {
   font-size: 12.5px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -842,34 +856,16 @@ button:focus-visible {
 
 /* ── Active session badge with pulse ── */
 .active-sessions-badge {
-  font-size: 9px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  min-width: 16px;
-  height: 16px;
-  line-height: 16px;
-  text-align: center;
-  border-radius: var(--radius-full);
-  background: var(--green-dim);
-  color: var(--green);
-  flex-shrink: 0;
-  padding: 0 5px;
+  font-size: 9.5px;
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  flex-shrink: 0;
+  padding: 0 6px;
+  height: 16px;
 }
-.active-sessions-badge:hover {
-  background: rgba(52,211,153,0.22);
-}
-
-.active-sessions-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--green);
-  animation: pulse-dot 2s ease-in-out infinite;
-}
+.active-sessions-badge:hover { transform: scale(1.06); }
+.active-sessions-dot { /* legacy selector kept as no-op */ }
 
 
 
@@ -914,17 +910,15 @@ button:focus-visible {
   justify-content: center;
   width: 14px;
   height: 14px;
-  flex-shrink: 0;
   cursor: pointer;
   border-radius: 3px;
-  transition: transform 0.15s;
+  color: var(--text-faint);
+  font-size: 10px;
+  flex-shrink: 0;
+  transition: transform var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
-.tree-chevron:hover {
-  background: var(--bg-hover);
-}
-.tree-chevron--expanded {
-  transform: rotate(90deg);
-}
+.tree-chevron:hover { color: var(--accent-hover); }
+.tree-chevron--expanded { transform: rotate(90deg); }
 .root-drop-zone {
   padding: 12px 16px;
   text-align: center;
@@ -997,11 +991,11 @@ button:focus-visible {
   flex-shrink: 0;
 }
 .group-name {
-  font-size: 11.5px;
-  font-weight: 700;
+  font-size: 10.5px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--text-muted);
+  font-weight: var(--font-weight-bold);
   flex: 1;
   min-width: 0;
   overflow: hidden;

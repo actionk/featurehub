@@ -36,6 +36,12 @@ export function getActiveCountForFeature(featureId: string): number {
   return counts[featureId] ?? 0;
 }
 
+export function isAnySessionWaitingForFeature(featureId: string): boolean {
+  return panelSessions.some(
+    (s) => s.feature_id === featureId && s.status === "WaitingForInput",
+  );
+}
+
 export function isSessionActive(claudeSessionId: string): boolean {
   return activeSessionIds.has(claudeSessionId);
 }
