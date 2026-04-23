@@ -24,8 +24,8 @@
 
 {#if open}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown}>
-    <div class="modal-content" style="width: {width};">
+  <div class="modal-backdrop scrim" onclick={handleBackdropClick} onkeydown={handleKeydown}>
+    <div class="modal-content glass-panel modal" style="width: {width};">
       {@render children()}
     </div>
   </div>

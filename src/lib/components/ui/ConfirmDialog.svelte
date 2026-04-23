@@ -34,9 +34,9 @@
     {#if actions}
       {@render actions()}
     {:else}
-      <button class="btn-subtle" style="padding: 7px 16px;" onclick={onClose}>{cancelLabel}</button>
+      <button class="btn btn-subtle" style="padding: 7px 16px;" onclick={onClose}>{cancelLabel}</button>
       <button
-        class="confirm-btn {variant === 'danger' ? 'confirm-btn--danger' : 'confirm-btn--primary'}"
+        class="btn {variant === 'danger' ? 'btn--danger confirm-btn confirm-btn--danger' : 'btn--primary confirm-btn confirm-btn--primary'}"
         onclick={onConfirm}
       >{confirmLabel}</button>
     {/if}

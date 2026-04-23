@@ -6968,3 +6968,58 @@ a.jira-task-key:hover {
 .search-result-row__title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--text-sm); }
 .search-result-row__snippet { color: var(--text-muted); font-size: var(--text-xs); margin-left: 8px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .search-result-row mark { background: transparent; color: var(--accent-hover); font-weight: var(--font-weight-semibold); }
+
+/* ===== MODALS / SETTINGS / STORAGE / TOGGLE ===== */
+
+.modal {
+  position: relative;
+  z-index: 101;
+  width: min(720px, 92vw);
+  max-height: 86vh;
+  margin: 7vh auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  box-shadow: var(--shadow-modal);
+}
+.modal__header { display: flex; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--border-subtle); }
+.modal__title { flex: 1; font-size: var(--text-lg); font-weight: var(--font-weight-semibold); letter-spacing: var(--letter-spacing-tight); }
+.modal__body { flex: 1; overflow-y: auto; padding: 16px 18px; }
+.modal__footer { padding: 12px 18px; border-top: 1px solid var(--border-subtle); display: flex; gap: 8px; justify-content: flex-end; }
+
+.dropdown__panel { position: absolute; min-width: 180px; padding: 4px; z-index: 1000; box-shadow: var(--shadow-modal); }
+.dropdown__option { padding: 6px 10px; font-size: var(--text-sm); border-radius: var(--radius-sm); cursor: pointer; }
+.dropdown__option:hover { background: var(--accent-dim); color: var(--accent-hover); }
+.dropdown__sep { height: 1px; background: var(--border-subtle); margin: 4px 0; }
+
+.settings-modal { display: grid; grid-template-columns: 200px 1fr; gap: 12px; height: 60vh; }
+.settings-modal__nav { display: flex; flex-direction: column; gap: 2px; padding: 8px; border-right: 1px solid var(--border-subtle); }
+.settings-modal__content { padding: 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.settings-modal__section { padding: 14px; }
+.settings-modal__section-title { font-size: 11px; text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); color: var(--text-muted); margin-bottom: 10px; font-weight: var(--font-weight-bold); }
+
+.storage-row { padding: 12px; margin-bottom: 8px; cursor: pointer; }
+.storage-row__name { font-weight: var(--font-weight-semibold); margin-bottom: 4px; }
+.storage-row__path { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+
+.toggle {
+  position: relative;
+  width: 32px; height: 18px;
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background var(--dur-base) var(--ease);
+  display: inline-block;
+  flex-shrink: 0;
+}
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
+}
+.toggle--on { background: var(--accent-dim); }
+.toggle--on::after { transform: translateX(14px); background: var(--accent-grad-cool); box-shadow: var(--accent-glow); }

@@ -40,7 +40,7 @@
       </div>
     {/if}
 
-    <button class="btn-new" style="width: auto; margin-top: 24px; padding: 10px 28px; font-size: 14px;" onclick={handleSelect} disabled={loading}>
+    <button class="btn btn--primary btn-new" style="width: auto; margin-top: 24px; padding: 10px 28px; font-size: 14px;" onclick={handleSelect} disabled={loading}>
       {loading ? "Creating..." : "Select Folder"}
     </button>
   </div>

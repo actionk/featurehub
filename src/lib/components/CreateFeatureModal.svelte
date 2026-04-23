@@ -180,7 +180,7 @@
           bind:this={inputEl}
           type="text"
           placeholder="Feature title"
-          class="form-input"
+          class="form-input input"
           bind:value={title}
         />
       </div>
@@ -191,7 +191,7 @@
         <textarea
           id="feat-description"
           placeholder="Brief description of this feature..."
-          class="form-input"
+          class="form-input input"
           style="resize: vertical; min-height: 40px;"
           rows="2"
           bind:value={description}
@@ -222,7 +222,7 @@
           <input
             id="create-link-input"
             type="url"
-            class="create-link-input"
+            class="create-link-input input"
             placeholder="Paste a URL and press Enter..."
             bind:value={linkInput}
             onkeydown={handleLinkKeydown}
@@ -300,8 +300,8 @@
     </div>
 
     <div class="create-modal-footer">
-      <button class="btn-subtle" onclick={onClose}>Cancel</button>
-      <button class="btn-new" onclick={handleSubmit} disabled={creating}>
+      <button class="btn btn-subtle" onclick={onClose}>Cancel</button>
+      <button class="btn btn--primary btn-new" onclick={handleSubmit} disabled={creating}>
         {creating ? "Creating..." : "Create Feature"}
       </button>
     </div>

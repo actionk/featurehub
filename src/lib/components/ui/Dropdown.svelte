@@ -36,7 +36,7 @@
 <div class="dropdown-wrapper" bind:this={wrapperEl}>
   {@render trigger()}
   {#if open}
-    <div class="dropdown-panel" style="{align === 'right' ? 'right: 0; left: auto;' : ''}">
+    <div class="dropdown-panel glass-panel dropdown__panel" style="{align === 'right' ? 'right: 0; left: auto;' : ''}">
       {@render children()}
     </div>
   {/if}

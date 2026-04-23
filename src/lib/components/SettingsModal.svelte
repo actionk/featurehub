@@ -303,8 +303,9 @@
     <nav class="settings-nav">
       {#each tabs as tab}
         <button
-          class="settings-nav-item"
+          class="settings-nav-item list-row"
           class:active={activeTab === tab.id}
+          class:list-row--active={activeTab === tab.id}
           onclick={() => activeTab = tab.id}
         >
           {#if tab.icon === "settings"}
@@ -376,7 +377,7 @@
             <p class="settings-panel-desc">Configure general application settings.</p>
           </div>
 
-          <div class="settings-section">
+          <div class="settings-section glass-panel--soft settings-modal__section">
             <label class="form-label" for="fh-cli-path">fh CLI Path</label>
             <div class="settings-field-desc">
               Full path to the <code>fh</code> binary. Used when copying the CLI command from sessions.
@@ -386,13 +387,13 @@
                 id="fh-cli-path"
                 type="text"
                 placeholder="e.g. D:\path\to\fh.exe"
-                class="form-input"
+                class="form-input input"
                 style="flex: 1; font-family: var(--font-mono); font-size: 12px;"
                 bind:value={fhCliPath}
               />
             </div>
             {#if detectedPath && detectedPath !== fhCliPath}
-              <button class="btn-add" style="margin-top: 6px; font-size: 11px;" onclick={useDetected}>
+              <button class="btn btn-add" style="margin-top: 6px; font-size: 11px;" onclick={useDetected}>
                 Use auto-detected: <code style="font-family: var(--font-mono);">{detectedPath}</code>
               </button>
             {/if}
@@ -403,15 +404,15 @@
             {/if}
           </div>
 
-          <div class="settings-section" style="margin-top: 20px;">
-            <h3 class="settings-section-title">Install CLI to PATH</h3>
+          <div class="settings-section glass-panel--soft settings-modal__section" style="margin-top: 20px;">
+            <h3 class="settings-section-title settings-modal__section-title">Install CLI to PATH</h3>
             <div class="settings-field-desc">
               Install <code>fh</code> and <code>fh-mcp</code> binaries so they're available from any terminal.
               {#if cliInPath}
                 Currently found at: <code style="font-family: var(--font-mono);">{cliInPath}</code>
               {/if}
             </div>
-            <button class="btn-add" onclick={handleInstallCli} disabled={installing} style="margin-top: 6px;">
+            <button class="btn btn-add" onclick={handleInstallCli} disabled={installing} style="margin-top: 6px;">
               {#if installing}
                 Installing...
               {:else if cliInPath}
@@ -432,12 +433,12 @@
             {/if}
           </div>
 
-          <div class="settings-section" style="margin-top: 20px;">
-            <h3 class="settings-section-title">Maintenance</h3>
+          <div class="settings-section glass-panel--soft settings-modal__section" style="margin-top: 20px;">
+            <h3 class="settings-section-title settings-modal__section-title">Maintenance</h3>
             <div class="settings-field-desc" style="margin-bottom: 8px;">
               Rebuild the full-text search index. Use this if search results seem incomplete or outdated.
             </div>
-            <button class="btn-add" onclick={handleReindex} disabled={reindexing}>
+            <button class="btn btn-add" onclick={handleReindex} disabled={reindexing}>
               {#if reindexed}
                 Rebuilt!
               {:else if reindexing}
@@ -458,14 +459,14 @@
             <p class="settings-panel-desc">Customize how the app looks.</p>
           </div>
 
-          <div class="settings-section">
-            <h3 class="settings-section-title">Fonts</h3>
+          <div class="settings-section glass-panel--soft settings-modal__section">
+            <h3 class="settings-section-title settings-modal__section-title">Fonts</h3>
             <div style="display: flex; flex-direction: column; gap: 16px; max-width: 460px;">
               <div>
                 <label class="form-label" for="ui-font">UI Font</label>
                 <select
                   id="ui-font"
-                  class="form-input"
+                  class="form-input input"
                   style="font-size: 12px;"
                   bind:value={uiFont}
                 >
@@ -484,7 +485,7 @@
                 <label class="form-label" for="mono-font">Monospace Font</label>
                 <select
                   id="mono-font"
-                  class="form-input"
+                  class="form-input input"
                   style="font-size: 12px;"
                   bind:value={monoFont}
                 >
@@ -504,7 +505,7 @@
                   <label class="form-label" for="ui-font-size">Font Size</label>
                   <select
                     id="ui-font-size"
-                    class="form-input"
+                    class="form-input input"
                     style="font-size: 12px;"
                     bind:value={uiFontSize}
                   >
@@ -520,7 +521,7 @@
                   <label class="form-label" for="terminal-font-size">Terminal Font Size</label>
                   <select
                     id="terminal-font-size"
-                    class="form-input"
+                    class="form-input input"
                     style="font-size: 12px;"
                     bind:value={terminalFontSize}
                   >
@@ -536,8 +537,8 @@
             </div>
           </div>
 
-          <div class="settings-section" style="margin-top: 20px;">
-            <h3 class="settings-section-title">Tabs</h3>
+          <div class="settings-section glass-panel--soft settings-modal__section" style="margin-top: 20px;">
+            <h3 class="settings-section-title settings-modal__section-title">Tabs</h3>
             <label class="settings-toggle">
               <input type="checkbox" bind:checked={showTabEmojis} />
               <span class="settings-toggle-label">Show emoji icons in tabs</span>
@@ -547,8 +548,8 @@
             </div>
           </div>
 
-          <div class="settings-section" style="margin-top: 20px;">
-            <h3 class="settings-section-title">Markdown Rendering</h3>
+          <div class="settings-section glass-panel--soft settings-modal__section" style="margin-top: 20px;">
+            <h3 class="settings-section-title settings-modal__section-title">Markdown Rendering</h3>
             <label class="settings-toggle">
               <input type="checkbox" bind:checked={mermaidDiagrams} />
               <span class="settings-toggle-label">Mermaid Diagrams</span>
@@ -611,7 +612,7 @@
                 <p class="settings-panel-desc">MCP servers available to Claude Code sessions. Servers marked "Default" are enabled for all features; others can be toggled on per-feature in the AI tab.</p>
                 {#if storageName}<p class="settings-storage-hint">Configured per storage. Currently editing: <strong>{storageName}</strong></p>{/if}
               </div>
-              <button class="btn-add" style="font-size: 12px; flex-shrink: 0;" onclick={addMcpServer}>+ Add Server</button>
+              <button class="btn btn-add" style="font-size: 12px; flex-shrink: 0;" onclick={addMcpServer}>+ Add Server</button>
             </div>
           </div>
 
@@ -629,7 +630,7 @@
                     <div style="width: 6px; height: 6px; border-radius: 50%; background: {server.default_enabled ? 'var(--purple)' : 'var(--text-muted)'}; flex-shrink: 0;"></div>
                     <input
                       type="text"
-                      class="form-input"
+                      class="form-input input"
                       style="flex: 1; font-size: 12px; font-weight: 600; padding: 5px 8px;"
                       placeholder="Server name (e.g. my-mcp)"
                       bind:value={server.name}
@@ -646,13 +647,13 @@
                   <div style="display: flex; flex-direction: column; gap: 4px; padding-left: 12px;">
                     <input
                       type="text"
-                      class="form-input"
+                      class="form-input input"
                       style="font-family: var(--font-mono); font-size: 11.5px; padding: 5px 8px;"
                       placeholder="Command (e.g. npx, node, python)"
                       bind:value={server.command}
                     />
                     <textarea
-                      class="form-input"
+                      class="form-input input"
                       style="font-family: var(--font-mono); font-size: 11.5px; padding: 6px 8px; resize: vertical; min-height: 52px;"
                       placeholder="Arguments (space-separated)"
                       value={server.args.join(" ")}
@@ -661,13 +662,13 @@
                     <div style="margin-top: 6px;">
                       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
                         <span style="font-size: 10.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Environment</span>
-                        <button class="btn-add" style="font-size: 10px; padding: 1px 6px;" onclick={() => addEnvVar(i)}>+ Env</button>
+                        <button class="btn btn-add" style="font-size: 10px; padding: 1px 6px;" onclick={() => addEnvVar(i)}>+ Env</button>
                       </div>
                       {#each Object.entries(server.env) as [key, val], ei}
                         <div style="display: flex; gap: 4px; margin-bottom: 3px; align-items: center;">
                           <input
                             type="text"
-                            class="form-input"
+                            class="form-input input"
                             style="font-family: var(--font-mono); font-size: 11px; padding: 3px 6px; width: 40%;"
                             placeholder="KEY"
                             value={key}
@@ -675,7 +676,7 @@
                           />
                           <input
                             type="text"
-                            class="form-input"
+                            class="form-input input"
                             style="font-family: var(--font-mono); font-size: 11px; padding: 3px 6px; flex: 1;"
                             placeholder="value"
                             value={val}
@@ -706,7 +707,7 @@
                 <p class="settings-panel-desc">Repositories listed here appear as quick-clone suggestions in every feature's Repositories tab. When cloned, they are shallow-copied into the feature's workspace.</p>
                 {#if storageName}<p class="settings-storage-hint">Configured per storage. Currently editing: <strong>{storageName}</strong></p>{/if}
               </div>
-              <button class="btn-add" style="font-size: 12px; flex-shrink: 0;" onclick={addDefaultRepository}>+ Add Repository</button>
+              <button class="btn btn-add" style="font-size: 12px; flex-shrink: 0;" onclick={addDefaultRepository}>+ Add Repository</button>
             </div>
           </div>
 
@@ -725,7 +726,7 @@
                     <span style="font-size: 10px; font-weight: 600; color: var(--text-muted); opacity: 0.5; min-width: 14px; text-align: right;">{i + 1}</span>
                     <input
                       type="text"
-                      class="settings-input"
+                      class="settings-input input"
                       style="flex: 1; font-size: 12px;"
                       placeholder="https://github.com/org/repo.git"
                       value={repo.url}
@@ -738,7 +739,7 @@
                   <div style="display: flex; gap: 6px; margin-left: 22px;">
                     <input
                       type="text"
-                      class="settings-input"
+                      class="settings-input input"
                       style="flex: 1; font-size: 11px;"
                       placeholder="Display name (auto-derived from URL)"
                       value={repo.name ?? ""}
@@ -746,7 +747,7 @@
                     />
                     <input
                       type="text"
-                      class="settings-input"
+                      class="settings-input input"
                       style="flex: 2; font-size: 11px;"
                       placeholder="Description (shown in Repositories tab and to Claude)"
                       value={repo.description ?? ""}
@@ -789,14 +790,14 @@
                   <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0;">
                     <div style="display: flex; gap: 8px; align-items: center;">
                       <input
-                        class="form-input"
+                        class="form-input input"
                         style="flex: 0 0 160px; font-size: 12px; font-family: var(--font-mono); padding: 4px 8px;"
                         placeholder="skill-id"
                         value={skill.id}
                         oninput={(e) => { skills[si].id = (e.target as HTMLInputElement).value; }}
                       />
                       <input
-                        class="form-input"
+                        class="form-input input"
                         style="flex: 1; font-size: 13px; padding: 4px 8px;"
                         placeholder="Skill Name"
                         value={skill.name}
