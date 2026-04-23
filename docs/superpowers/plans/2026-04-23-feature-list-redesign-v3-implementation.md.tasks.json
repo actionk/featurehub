@@ -1,0 +1,26 @@
+{
+  "planPath": "docs/superpowers/plans/2026-04-23-feature-list-redesign-v3-implementation.md",
+  "tasks": [
+    {
+      "id": 21,
+      "subject": "Task 1: Add .feature-unit CSS primitive system",
+      "status": "pending",
+      "description": "**Goal:** Introduce new unified-card CSS appended to src/app.css, inert (new classes unused in markup yet).\n\n**Files:** src/app.css (append at EOF)\n\n**Acceptance Criteria:**\n- .feature-unit / .unit-head / .sub-list / .sub-session + state modifiers defined\n- npm run build passes\n- npm run test -- --run passes\n- No visual change yet\n\n**Verify:** `npm run build && npm run test -- --run`\n\n```json:metadata\n{\"files\":[\"src/app.css\"],\"verifyCommand\":\"npm run build && npm run test -- --run\",\"acceptanceCriteria\":[\"new .feature-unit classes defined\",\"build passes\",\"tests pass\",\"no visual change yet\"]}\n```"
+    },
+    {
+      "id": 22,
+      "subject": "Task 2: Restructure Sidebar markup to use .feature-unit",
+      "status": "pending",
+      "blockedBy": [21],
+      "description": "**Goal:** Replace per-feature render block (Sidebar.svelte:882-1011) with .feature-unit card containing .unit-head + optional .sub-list with .sub-session rows. Preserve all existing behavior.\n\n**Files:** src/lib/components/Sidebar.svelte:882-1011\n\n**Acceptance Criteria:**\n- Feature without sessions = single .feature-unit with only .unit-head\n- Feature with sessions = .feature-unit with .unit-head + .sub-list (dashed divider visible)\n- Session state → correct modifier (running/waiting/viewing/exited)\n- .feature-unit--has-viewing when any terminal matches viewingTerminalId AND feature not selected\n- Pinned glyph before title; tree chevron + pmb + sessions badge in .unit-head__right\n- Click .unit-head → onSelect / requestShowOverview (existing logic)\n- Click .sub-session → onSelectTerminal; click .sub-session__finish → onFinishTerminal + stopPropagation\n- Drag + context menu still work\n- npm run build + tests + visual QA via npm run tauri dev\n\n**Verify:** `npm run build && npm run test -- --run && npm run tauri dev`\n\n```json:metadata\n{\"files\":[\"src/lib/components/Sidebar.svelte\"],\"verifyCommand\":\"npm run build && npm run test -- --run\",\"acceptanceCriteria\":[\"cards render\",\"sub-list with divider\",\"session state modifiers\",\"has-viewing modifier\",\"pinned glyph\",\"chevron\",\"click handlers preserved\",\"drag preserved\",\"context menu preserved\",\"build passes\",\"tests pass\"]}\n```"
+    },
+    {
+      "id": 23,
+      "subject": "Task 3: Remove legacy feature-item + feature-session CSS",
+      "status": "pending",
+      "blockedBy": [22],
+      "description": "**Goal:** Delete all unused CSS blocks for the old flat-row + tree-connector system.\n\n**Files:** src/app.css (delete 3 ranges)\n\n**Acceptance Criteria:**\n- All .feature-item* rules removed EXCEPT wrapper/drag-drop classes\n- .feature-item-wrapper.feature-item-drop-child retargeted to > .feature-unit\n- All .feature-session-* rules removed\n- @keyframes pulse-amber preserved\n- .list-row / .list-row--active preserved\n- Grep in src/ returns zero references to old classes (aside from wrapper-drag)\n- npm run build + tests pass\n\n**Verify:** `npm run build && npm run test -- --run`\n\n```json:metadata\n{\"files\":[\"src/app.css\"],\"verifyCommand\":\"npm run build && npm run test -- --run\",\"acceptanceCriteria\":[\"legacy blocks deleted\",\"wrapper drag rules preserved\",\"pulse-amber keyframes preserved\",\"list-row preserved\",\"drop-child retargeted to .feature-unit\",\"build passes\",\"tests pass\",\"grep shows zero old-class references\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-04-23T00:00:00Z"
+}
