@@ -13,106 +13,111 @@
 @import "tailwindcss";
 
 :root {
-  /* ── Surface Colors (layered depth system) ── */
-  --bg-base: #08090e;
-  --bg-primary: #0d0f18;
-  --bg-secondary: #0f1120;
-  --bg-card: #12141f;
+  /* ── Surface Colors ── */
+  --bg-base: #050610;
+  --bg-aurora: #07081a;
+  --bg-primary: #07081a;            /* alias of bg-aurora for back-compat */
+  --bg-secondary: #0a0c1a;
+  --bg-card: #12141f;               /* legacy; new code uses --bg-glass */
   --bg-raised: #161826;
-  --bg-hover: #181a28;
-  --bg-active: #1c1e30;
-  --bg-input: #0b0d16;
+  --bg-hover: rgba(255,255,255,0.04);
+  --bg-active: rgba(167,139,250,0.16);
+  --bg-input: rgba(20,22,40,0.5);
   --bg-overlay: rgba(0,0,0,0.7);
+  --bg-sidebar: rgba(8,9,18,0.35);
+  --bg-glass: rgba(20,22,40,0.42);
+  --bg-glass-soft: rgba(15,16,32,0.5);
+
+  /* ── Aurora gradient (single source) ── */
+  --aurora:
+    radial-gradient(640px 460px at 0% 0%,    rgba(99,102,241,0.28), transparent 55%),
+    radial-gradient(540px 380px at 100% 0%,  rgba(236,72,153,0.16), transparent 55%),
+    radial-gradient(720px 480px at 50% 130%, rgba(34,211,238,0.16), transparent 55%);
 
   /* ── Borders ── */
-  --border-subtle: rgba(255,255,255,0.05);
-  --border:        rgba(255,255,255,0.06);
-  --border-strong: rgba(255,255,255,0.10);
-  --border-focus: #4d7cff;
+  --border-subtle: rgba(255,255,255,0.06);
+  --border:        rgba(255,255,255,0.10);
+  --border-strong: rgba(196,181,253,0.35);
+  --border-focus:  rgba(196,181,253,0.6);
+  --border-glow-top: linear-gradient(90deg, transparent, rgba(196,181,253,0.5), transparent);
 
   /* ── Text ── */
   --text-primary: #e8ecf8;
   --text-secondary: #b8c0d8;
-  --text-muted: #5a6480;
-  --text-faint: #3a4060;
+  --text-muted: #6a7390;
+  --text-faint: #4a5070;
 
-  /* ── Accent ── */
-  --accent: #4d7cff;
-  --accent-hover: #6b93ff;
-  --accent-dim: rgba(77,124,255,0.12);
-  --accent-border: rgba(77,124,255,0.22);
-  --accent-glow: rgba(77,124,255,0.25);
+  /* ── Accent (indigo→violet→cyan) ── */
+  --accent: #a78bfa;
+  --accent-hover: #c4b5fd;
+  --accent-deep: #6366f1;
+  --accent-cool: #22d3ee;
+  --accent-grad: linear-gradient(135deg, #6366f1, #a78bfa);
+  --accent-grad-cool: linear-gradient(90deg, #a78bfa, #22d3ee);
+  --accent-dim: rgba(167,139,250,0.18);
+  --accent-border: rgba(196,181,253,0.4);
+  --accent-glow: 0 0 14px rgba(167,139,250,0.35);
+  --accent-glow-strong: 0 0 22px rgba(167,139,250,0.55);
 
-  /* ── Semantic Colors ── */
-  --green: #34d399;
-  --green-dim: rgba(52,211,153,0.12);
-  --amber: #fbbf24;
-  --amber-dim: rgba(251,191,36,0.12);
-  --red: #f87171;
-  --red-dim: rgba(248,113,113,0.12);
-  --blue: #52a9ff;
-  --blue-dim: rgba(82,169,255,0.12);
-  --purple: #a78bfa;
-  --purple-dim: rgba(167,139,250,0.12);
-  --cyan: #22d3ee;
-  --cyan-dim: rgba(34,211,238,0.12);
+  /* ── Semantic colors ── */
+  --green: #22d3ee;          --green-dim: rgba(34,211,238,0.15);    --green-border: rgba(103,232,249,0.45);
+  --amber: #fbbf24;          --amber-dim: rgba(251,191,36,0.15);    --amber-border: rgba(252,211,77,0.45);
+  --red:   #f87171;          --red-dim:   rgba(248,113,113,0.15);   --red-border:   rgba(248,113,113,0.45);
+  --blue:  #52a9ff;          --blue-dim:  rgba(82,169,255,0.15);    --blue-border:  rgba(82,169,255,0.45);
+  --cyan:  #67e8f9;          --cyan-dim:  rgba(103,232,249,0.15);   --cyan-border:  rgba(103,232,249,0.45);
+  --purple:#a78bfa;          --purple-dim:rgba(167,139,250,0.15);
+  --violet:#a78bfa;          --violet-dim:rgba(167,139,250,0.18);   --violet-border:rgba(196,181,253,0.4);
+  --pink:  #ec4899;          --pink-dim:  rgba(236,72,153,0.15);    --pink-border:  rgba(244,114,182,0.45);
 
   /* ── Spacing Scale ── */
-  --space-0: 0px;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
+  --space-0: 0px;  --space-1: 4px;  --space-2: 8px;  --space-3: 12px;  --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;
 
   /* ── Radius ── */
-  --radius-sm:  7px;
-  --radius-md:  11px;
-  --radius:     15px;
-  --radius-lg:  15px;
-  --radius-xl:  20px;
-  --radius-2xl: 26px;
-  --radius-full: 9999px;
+  --radius-sm:  7px;  --radius-md: 11px;  --radius: 15px;  --radius-lg: 15px;
+  --radius-xl:  20px; --radius-2xl: 26px; --radius-full: 9999px;
 
   /* ── Shadows ── */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-lg: 0 8px 30px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.3);
-  --shadow-xl: 0 20px 60px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.4);
-  --shadow-glow: 0 0 20px rgba(77,124,255,0.12);
+  --shadow-sm:        0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:        0 4px 16px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-lg:        0 8px 30px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-xl:        0 20px 60px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-glow:      0 0 20px rgba(167,139,250,0.18);
+  --shadow-card:      0 8px 28px rgba(99,102,241,0.18);
+  --shadow-card-hover:0 12px 36px rgba(99,102,241,0.28);
+  --shadow-modal:     0 30px 80px rgba(0,0,0,0.7);
+  --shadow-glow-violet: 0 0 22px rgba(167,139,250,0.45);
+  --shadow-glow-cyan:   0 0 18px rgba(34,211,238,0.45);
+  --shadow-glow-amber:  0 0 16px rgba(251,191,36,0.40);
 
   /* ── Typography ── */
-  --text-xs: 10.5px;
-  --text-sm: 12px;
-  --text-base: 13px;
-  --text-md: 14px;
-  --text-lg: 16px;
-  --text-xl: 18px;
-  --text-2xl: 22px;
-  --font-ui: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --text-xs: 10.5px; --text-sm: 12px; --text-base: 13px; --text-md: 14px;
+  --text-lg: 16px;   --text-xl: 18px; --text-2xl: 22px;
+  --font-ui:   'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --font-size: 13px;
+  --font-weight-normal: 400; --font-weight-medium: 500;
+  --font-weight-semibold: 600; --font-weight-bold: 700;
+  --letter-spacing-tight: -0.01em;
+  --letter-spacing-wide:   0.12em;
 
-  /* ── Transitions ── */
-  --transition-fast: 0.12s cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-base: 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-slow: 0.32s cubic-bezier(0.16, 1, 0.3, 1);
-}
+  /* ── Motion ── */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;  --dur-base: 180ms;  --dur-slow: 320ms;
+  --transition-fast: var(--dur-fast)  var(--ease);
+  --transition-base: var(--dur-base)  var(--ease);
+  --transition-slow: var(--dur-slow)  var(--ease);
+  --lift: translateY(-2px);
 
-:root {
-  /* ── Gradients ── */
-  --grad-primary: linear-gradient(135deg, #4d7cff, #7b6fff);
-  --grad-success: linear-gradient(135deg, #34d399, #22d3ee);
-  --grad-warn: linear-gradient(135deg, #fbbf24, #f97316);
-  --grad-cool: linear-gradient(135deg, #22d3ee, #4d7cff);
+  /* ── Gradients (legacy aliases) ── */
+  --grad-primary: var(--accent-grad);
+  --grad-success: linear-gradient(135deg, #22d3ee, #34d399);
+  --grad-warn:    linear-gradient(135deg, #fbbf24, #f97316);
+  --grad-cool:    var(--accent-grad-cool);
 
-  /* ── Card hover system ── */
+  /* ── Card hover (legacy) ── */
   --card-hover-y:      -2px;
-  --card-hover-shadow: 0 14px 40px rgba(0,0,0,0.38), 0 2px 8px rgba(0,0,0,0.18);
+  --card-hover-shadow: var(--shadow-card-hover);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -6335,6 +6340,16 @@ a.jira-task-key:hover {
 .session-row--idle:hover {
   background: var(--bg-hover);
   opacity: 1;
+}
+
+.session-row--viewing {
+  background: color-mix(in srgb, var(--accent) 18%, var(--bg-card));
+  border-left-color: var(--accent);
+  opacity: 1;
+}
+
+.session-row--viewing:hover {
+  background: color-mix(in srgb, var(--accent) 24%, var(--bg-card));
 }
 
 .session-copy-btn {
