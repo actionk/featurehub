@@ -291,7 +291,7 @@
         onkeydown={handleEditKeydown}
       />
       <div style="display: flex; gap: 8px;">
-        <button class="btn-accent" style="font-size: 12px; padding: 5px 14px;" onclick={handleEditSubmit}>
+        <button class="btn-accent btn btn--primary" style="font-size: 12px; padding: 5px 14px;" onclick={handleEditSubmit}>
           Save
         </button>
         <button class="btn-subtle" onclick={resetEditForm}>

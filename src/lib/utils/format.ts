@@ -85,3 +85,40 @@ export function fileTypeColor(ext: string | undefined | null): string {
   };
   return map[ext.toLowerCase()] ?? 'var(--text-muted)';
 }
+
+export function linkTypeColor(type: string | undefined | null): string {
+  if (!type) return 'var(--text-muted)';
+  const map: Record<string, string> = {
+    github: 'var(--text-secondary)',
+    gitlab: 'var(--amber)',
+    jira: 'var(--blue)',
+    linear: 'var(--violet)',
+    figma: 'var(--pink)',
+    confluence: 'var(--blue)',
+    slack: 'var(--violet)',
+    notion: 'var(--text-secondary)',
+    discord: 'var(--violet)',
+    google: 'var(--cyan)',
+    youtube: 'var(--red)',
+    loom: 'var(--violet)',
+    arena: 'var(--green)',
+    drive: 'var(--green)',
+    docs: 'var(--blue)',
+    sheets: 'var(--green)',
+    miro: 'var(--amber)',
+  };
+  return map[type.toLowerCase()] ?? 'var(--accent)';
+}
+
+export function eventColor(kind: string | undefined | null): string {
+  if (!kind) return 'var(--text-muted)';
+  const k = kind.toLowerCase();
+  if (k.includes('error') || k.includes('fail') || k.includes('reject')) return 'var(--red)';
+  if (k.includes('warn') || k.includes('paus')) return 'var(--amber)';
+  if (k.includes('done') || k.includes('approved') || k.includes('complete') || k.includes('success')) return 'var(--cyan)';
+  if (k.includes('plan')) return 'var(--violet)';
+  if (k.includes('session') || k.includes('agent')) return 'var(--accent)';
+  if (k.includes('task')) return 'var(--blue)';
+  if (k.includes('note') || k.includes('context')) return 'var(--pink)';
+  return 'var(--accent)';
+}

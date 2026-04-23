@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Link } from "../../api/tauri";
   import { getLinkTypeInfo } from "../../utils/linkTypes";
+  import { linkTypeColor } from "../../utils/format";
   import { open as shellOpen } from "@tauri-apps/plugin-shell";
 
   let {
@@ -57,7 +58,7 @@
 </script>
 
 <div
-  class="link-row"
+  class="link-row link-card glass-panel glass-panel--hover"
   onmouseenter={() => (hovered = true)}
   onmouseleave={() => (hovered = false)}
   onclick={openUrl}
@@ -66,14 +67,15 @@
   tabindex="0"
   onkeydown={(e) => { if (e.key === 'Enter') openUrl(); }}
 >
-  <span class="link-type-badge" style="background: {info.color}; color: {badgeTextColor};">{info.label}</span>
-  <span class="link-row-title">{link.title}</span>
+  <span class="link-card__icon" style="background: {linkTypeColor(link.link_type)}; color: {linkTypeColor(link.link_type)};"></span>
+  <span class="link-type-badge aurora-pill aurora-pill--muted aurora-pill--sm aurora-pill--no-dot" style="background: {info.color}; color: {badgeTextColor};">{info.label}</span>
+  <span class="link-row-title link-card__title">{link.title}</span>
   {#if link.description}
     <span class="link-row-desc">{link.description}</span>
   {/if}
-  <span class="link-row-url">{truncateUrl(link.url)}</span>
-  <div class="link-row-actions">
-    <button class="btn-ghost link-copy-btn" class:visible={hovered || copied} onclick={(e) => { e.stopPropagation(); copyUrl(); }} aria-label="Copy link">
+  <span class="link-row-url link-card__url">{truncateUrl(link.url)}</span>
+  <div class="link-row-actions link-card__actions link-card__meta">
+    <button class="btn-ghost btn btn--icon btn--ghost btn--sm link-copy-btn" class:visible={hovered || copied} onclick={(e) => { e.stopPropagation(); copyUrl(); }} aria-label="Copy link">
       {#if copied}
         <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" style="color: var(--green);"><path d="M13.5 2.5l-7 7L3 6l-1.5 1.5 5 5 8.5-8.5z"/></svg>
       {:else}
@@ -81,10 +83,10 @@
       {/if}
     </button>
     {#if hovered}
-      <button class="btn-ghost" onclick={(e) => { e.stopPropagation(); onEdit(link); }} aria-label="Edit">
+      <button class="btn-ghost btn btn--icon btn--ghost btn--sm" onclick={(e) => { e.stopPropagation(); onEdit(link); }} aria-label="Edit">
         <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M12.1 1.3a1 1 0 011.4 0l1.2 1.2a1 1 0 010 1.4L5.8 12.8l-3.5.9.9-3.5z"/></svg>
       </button>
-      <button class="btn-ghost" style="color: var(--red);" onclick={(e) => { e.stopPropagation(); onDelete(link); }} aria-label="Delete">
+      <button class="btn-ghost btn btn--icon btn--ghost btn--sm" style="color: var(--red);" onclick={(e) => { e.stopPropagation(); onDelete(link); }} aria-label="Delete">
         <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 3.1L8 6.6l3.5-3.5 1.4 1.4L9.4 8l3.5 3.5-1.4 1.4L8 9.4l-3.5 3.5-1.4-1.4L6.6 8 3.1 4.5z"/></svg>
       </button>
     {:else}

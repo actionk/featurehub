@@ -8,6 +8,7 @@
     columnStatus,
     stale = false,
     staleDays = 0,
+    isDragging = false,
     onOpen,
     onArchive,
     onDragStart,
@@ -16,6 +17,7 @@
     columnStatus: string;
     stale?: boolean;
     staleDays?: number;
+    isDragging?: boolean;
     onOpen: (featureId: string) => void;
     onArchive?: (featureId: string) => void;
     onDragStart: (e: MouseEvent, featureId: string) => void;
@@ -63,8 +65,9 @@
 </script>
 
 <div
-  class="board-card"
+  class="board-card glass-panel glass-panel--hover"
   class:board-card--stale={stale}
+  class:dragging={isDragging}
   style="border-left-color: {borderColor};"
   data-feature-id={feature.id}
   onclick={handleClick}
@@ -74,7 +77,7 @@
   tabindex="0"
 >
   <div class="board-card-header">
-    <span class="board-card-title">
+    <span class="board-card-title board-card__title">
       {#if feature.pinned}📌 {/if}{feature.title}
     </span>
     {#if activeCount > 0}
@@ -83,7 +86,7 @@
   </div>
 
   {#if tags.length > 0}
-    <div class="board-card-tags">
+    <div class="board-card-tags board-card__meta">
       {#each tags as tag}
         <span class="board-card-tag" style="background: {tag.color}18; color: {tag.color};">{tag.name}</span>
       {/each}

@@ -361,7 +361,7 @@
         <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--purple)"><path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8.5V1.5zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/></svg>
         Repositories
       </div>
-      <button class="btn-add" onclick={() => { showAddForm = !showAddForm; addError = null; }}>+ Clone</button>
+      <button class="btn-add btn btn--primary btn--sm" onclick={() => { showAddForm = !showAddForm; addError = null; }}>+ Clone</button>
     </div>
 
     {#if directories.length + suggestedRepos.length > 3}
@@ -401,7 +401,7 @@
             onkeydown={(e) => { if (e.key === 'Enter') handleAddFromForm(); if (e.key === 'Escape') showAddForm = false; }}
             style="width: 120px;"
           />
-          <button class="repo-add-btn" onclick={handleAddFromForm}>Clone</button>
+          <button class="repo-add-btn btn btn--primary btn--sm" onclick={handleAddFromForm}>Clone</button>
           <button class="repo-add-cancel" onclick={() => showAddForm = false} title="Cancel">
             <svg width="10" height="10" viewBox="0 0 16 16"><path d="M4.5 3.5l7 7m0-7l-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
           </button>
@@ -431,34 +431,34 @@
           {@const changes = gitStatus ? getTotalChanges(gitStatus) : 0}
           {@const changeSummary = gitStatus ? getChangeSummary(gitStatus) : null}
           {#if status === "cloning"}
-            <div class="repo-tile repo-tile--cloning">
+            <div class="repo-tile repo-tile--cloning repo-row glass-panel">
               <button class="repo-tile-remove" title="Cancel clone" onclick={(e) => { e.stopPropagation(); promptRemoveDirectory(dir); }}>
                 <svg width="10" height="10" viewBox="0 0 16 16"><path d="M4.5 3.5l7 7m0-7l-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
               </button>
               <div class="repo-tile-icon repo-tile-icon--amber">
                 <svg width="18" height="18" viewBox="0 0 16 16" fill="var(--amber)" style="animation: spin 1s linear infinite;"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10z" opacity="0.3"/><path d="M8 1a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V1z"/></svg>
               </div>
-              <span class="repo-tile-name">{getDirName(dir)}</span>
-              <span class="repo-tile-status-text" style="color: var(--amber);">Cloning...</span>
+              <span class="repo-tile-name repo-row__name">{getDirName(dir)}</span>
+              <span class="repo-tile-status-text aurora-pill aurora-pill--warn aurora-pill--sm" style="color: var(--amber);">Cloning...</span>
             </div>
           {:else if status === "failed"}
-            <div class="repo-tile repo-tile--failed">
+            <div class="repo-tile repo-tile--failed repo-row glass-panel">
               <button class="repo-tile-remove" title="Remove repository" onclick={(e) => { e.stopPropagation(); promptRemoveDirectory(dir); }}>
                 <svg width="10" height="10" viewBox="0 0 16 16"><path d="M4.5 3.5l7 7m0-7l-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
               </button>
               <div class="repo-tile-icon repo-tile-icon--red">
                 <svg width="18" height="18" viewBox="0 0 16 16" fill="var(--red)"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm1 11H7v-2h2v2zm0-4H7V4h2v4z"/></svg>
               </div>
-              <span class="repo-tile-name">{getDirName(dir)}</span>
-              <span class="repo-tile-status-text" style="color: var(--red);">Clone failed</span>
+              <span class="repo-tile-name repo-row__name">{getDirName(dir)}</span>
+              <span class="repo-tile-status-text aurora-pill aurora-pill--danger aurora-pill--sm" style="color: var(--red);">Clone failed</span>
               {#if dir.clone_error}
                 <span class="repo-tile-error" title={dir.clone_error}>{dir.clone_error}</span>
               {/if}
-              <button class="repo-tile-retry" onclick={() => handleRetryClone(dir.id)}>Retry</button>
+              <button class="repo-tile-retry btn btn--sm" onclick={() => handleRetryClone(dir.id)}>Retry</button>
             </div>
           {:else}
             <!-- Ready -->
-            <div class="repo-tile">
+            <div class="repo-tile repo-row glass-panel">
               <button class="repo-tile-copy-path" title="Copy local path" onclick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(dir.path); copiedPathDir = dir.id; setTimeout(() => { if (copiedPathDir === dir.id) copiedPathDir = null; }, 1500); }}>
                 {#if copiedPathDir === dir.id}
                   <svg width="10" height="10" viewBox="0 0 16 16" fill="var(--green)"><path d="M13.3 4.3L6 11.6 2.7 8.3l1.4-1.4L6 8.8l5.9-5.9z"/></svg>
@@ -489,16 +489,17 @@
                 </button>
               {/if}
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="repo-tile-top" onclick={() => openPath(dir.path)} onkeydown={(e) => { if (e.key === 'Enter') openPath(dir.path); }} role="button" tabindex="0" title={dir.path}>
+              <div class="repo-tile-top repo-row__head" onclick={() => openPath(dir.path)} onkeydown={(e) => { if (e.key === 'Enter') openPath(dir.path); }} role="button" tabindex="0" title={dir.path}>
                 <div class="repo-tile-icon">
                   <svg width="18" height="18" viewBox="0 0 16 16" fill="var(--purple)" opacity="0.7"><path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8.5V1.5zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/></svg>
                 </div>
-                <span class="repo-tile-name">{getDirName(dir)}</span>
+                <span class="repo-tile-name repo-row__name">{getDirName(dir)}</span>
+                <span class="aurora-pill aurora-pill--success aurora-pill--sm aurora-pill--no-dot" style="display: none;">Cloned</span>
               </div>
               {#if gitStatus}
                 {@const aheadBehind = getAheadBehindText(gitStatus)}
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <button class="repo-tile-branch" class:repo-tile-branch--dirty={changes > 0}
+                <button class="repo-tile-branch list-row list-row--active" class:repo-tile-branch--dirty={changes > 0}
                   onclick={(e) => { e.stopPropagation(); openBranchSwitcher(dir, e); }}
                   title="Switch branch">
                   <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3v5.17a3 3 0 1 0 2 0V7a1 1 0 0 1 1-1h1a3 3 0 0 0 3-3V2h-2v1a1 1 0 0 1-1 1H9a3 3 0 0 0-2.83 2H5V3H3v3h2V5z"/><circle cx="6" cy="12" r="1.5"/></svg>
@@ -527,7 +528,7 @@
               {#if installedIdes.length > 0}
                 <div class="repo-tile-ides">
                   {#each installedIdes as ide}
-                    <button class="repo-tile-ide-btn" title="Open in {ide.name}"
+                    <button class="repo-tile-ide-btn btn btn--sm" title="Open in {ide.name}"
                       onclick={(e) => { e.stopPropagation(); openInIde(dir.path, ide.command); }}>
                       {#if ide.id === "vscode"}
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.583 2.603L12.2 7.386 7.847 4.15l-.87.507v14.71l.87.508 5.384-3.252-4.354-3.236L17.583 21.4l.87-.507V3.11l-.87-.507zM7.847 14.86V9.163l3.508 2.849-3.508 2.849z"/></svg>
@@ -592,7 +593,7 @@
       {:else}
         <div class="branch-dropdown-list">
           {#each filteredBranches(gitStatus.branch) as branch}
-            <button class="branch-dropdown-item" disabled={switchingBranch}
+            <button class="branch-dropdown-item list-row" disabled={switchingBranch}
               onclick={() => handleSwitchBranch(dir, branch)}>
               {branch}
             </button>
@@ -610,7 +611,7 @@
           onkeydown={(e) => { if (e.key === 'Enter' && newBranchName.trim()) handleCreateBranch(dir); if (e.key === 'Escape') closeBranchDropdown(); }}
         />
         <button
-          class="branch-dropdown-create-btn"
+          class="branch-dropdown-create-btn btn btn--primary btn--sm"
           disabled={!newBranchName.trim() || creatingBranch}
           onclick={() => handleCreateBranch(dir)}
         >

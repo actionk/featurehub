@@ -290,6 +290,7 @@
         color={col.color}
         features={columnFeatures(col.status)}
         dragOver={dropTargetColumn === col.status && draggingId !== null}
+        draggingId={draggingId}
         onOpen={handleOpen}
         onArchive={handleArchive}
         onDragStart={handleDragStart}

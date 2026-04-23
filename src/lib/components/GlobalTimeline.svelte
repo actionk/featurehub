@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getGlobalTimeline, type GlobalTimelineEvent } from "../api/timeline";
-  import { formatDate } from "../utils/format";
+  import { formatDate, eventColor } from "../utils/format";
 
   let events = $state<GlobalTimelineEvent[]>([]);
   let loading = $state(true);
@@ -77,7 +77,7 @@
     <span class="gtl-subtitle">Activity across all features</span>
   </div>
 
-  <div class="gtl-body">
+  <div class="gtl-body timeline">
     {#if loading && events.length === 0}
       <div class="gtl-empty">Loading…</div>
     {:else if events.length === 0}
@@ -92,14 +92,15 @@
           </div>
           {#each group.events as ev}
             {@const meta = getMeta(ev.event_type)}
-            <div class="gtl-row">
-              <span class="gtl-time">{formatTime(ev.timestamp)}</span>
-              <span class="gtl-dot" style="background: {meta.color};"></span>
+            {@const evColor = eventColor(ev.event_type)}
+            <div class="gtl-row timeline__event glass-panel--soft">
+              <span class="gtl-time timeline__meta">{formatTime(ev.timestamp)}</span>
+              <span class="gtl-dot timeline__dot live-dot live-dot--static" style="background: {evColor}; color: {evColor};"></span>
               <span class="gtl-verb" style="color: {meta.color};">{meta.verb}</span>
-              <span class="gtl-title-text">{ev.title}</span>
-              <span class="gtl-feature-badge">{ev.feature_title}</span>
+              <span class="gtl-title-text timeline__title">{ev.title}</span>
+              <span class="gtl-feature-badge aurora-pill aurora-pill--muted aurora-pill--sm aurora-pill--no-dot">{ev.feature_title}</span>
               {#if ev.detail && ev.event_type !== "note_updated" && ev.detail !== ev.title}
-                <span class="gtl-detail">{ev.detail}</span>
+                <span class="gtl-detail timeline__meta">{ev.detail}</span>
               {/if}
             </div>
           {/each}
