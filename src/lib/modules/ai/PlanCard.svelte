@@ -12,10 +12,10 @@
     onSelect?: (plan: Plan) => void;
   } = $props();
 
-  function statusColor(status: string): string {
-    if (status === "approved") return "var(--green)";
-    if (status === "rejected") return "var(--red)";
-    return "var(--amber)";
+  function statusVariant(status: string): string {
+    if (status === "approved") return "aurora-pill--success";
+    if (status === "rejected") return "aurora-pill--danger";
+    return "aurora-pill--warn";
   }
 
   function statusLabel(status: string): string {
@@ -26,11 +26,11 @@
 </script>
 
 <button
-  class="plan-card {selected ? 'plan-card--selected' : ''} {plan.status === 'pending' ? 'plan-card--pending' : ''}"
+  class="plan-card glass-panel glass-panel--hover {selected ? 'plan-card--selected' : ''} {plan.status === 'pending' ? 'plan-card--pending' : ''}"
   onclick={() => onSelect?.(plan)}
 >
   <div class="plan-card-header">
-    <span class="plan-card-status" style="background: {statusColor(plan.status)}20; color: {statusColor(plan.status)}; border: 1px solid {statusColor(plan.status)}40;">
+    <span class="plan-card-status aurora-pill aurora-pill--sm {statusVariant(plan.status)}">
       {statusLabel(plan.status)}
     </span>
     <span class="plan-card-time">{formatRelativeTime(plan.created_at)}</span>

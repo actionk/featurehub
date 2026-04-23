@@ -120,10 +120,10 @@
   }
 </script>
 
-<div class="sc" class:sc--active={isActive || isInProgress} role="group">
+<div class="sc glass-panel glass-panel--hover session-card" class:sc--active={isActive || isInProgress} role="group">
   {#if hasSessionId}
     <button class="sc__main" class:sc__main--disabled={isRunningExternally} onclick={handleClick} title={isRunningExternally ? "Session is running externally" : "Open session in embedded terminal"}>
-      <span class="sc__dot" class:sc__dot--live={isActive || isInProgress}></span>
+      <span class="sc__dot live-dot" class:sc__dot--live={isActive || isInProgress} class:live-dot--static={!(isActive || isInProgress)}></span>
       {#if editing}
         <!-- svelte-ignore a11y_autofocus -->
         <input
@@ -166,7 +166,7 @@
     </button>
   {:else}
     <div class="sc__main sc__main--static">
-      <span class="sc__dot" class:sc__dot--live={isInProgress}></span>
+      <span class="sc__dot live-dot" class:sc__dot--live={isInProgress} class:live-dot--warn={isInProgress} class:live-dot--static={!isInProgress}></span>
       {#if editing}
         <!-- svelte-ignore a11y_autofocus -->
         <input

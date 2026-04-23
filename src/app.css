@@ -6776,3 +6776,61 @@ a.jira-task-key:hover {
 @keyframes cursor-blink {
   50% { opacity: 0; }
 }
+
+/* ===== AGENTS TAB (AI module) ===== */
+
+.session-card__model { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent-hover); }
+.session-card__meta  { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+
+.plan-card,
+.plan-detail { padding: 14px; }
+.plan-card__header,
+.plan-detail__header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.plan-card__title,
+.plan-detail__title { font-weight: var(--font-weight-semibold); }
+.plan-card__body,
+.plan-detail__body { font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.55; }
+.plan-card__actions,
+.plan-detail__actions { display: flex; gap: 8px; margin-top: 12px; }
+
+.context-editor { padding: 12px; display: flex; flex-direction: column; gap: 10px; height: 100%; }
+.context-editor__toolbar { display: flex; gap: 8px; justify-content: flex-end; }
+.context-editor__textarea {
+  flex: 1; resize: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  min-height: 280px;
+}
+
+.mcp-server-row { display: flex; align-items: center; gap: 10px; }
+.mcp-server-row__name { font-weight: var(--font-weight-medium); }
+
+.skill-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+.skill-row__name { font-weight: var(--font-weight-semibold); font-size: var(--text-sm); }
+.skill-row__desc { color: var(--text-secondary); font-size: var(--text-xs); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Terminal skin — stay padding-free so xterm fit addon gets real offsetWidth */
+.terminal {
+  background: rgba(0,0,0,0.4);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+}
+.terminal::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px, rgba(0,0,0,0.06) 3px);
+  pointer-events: none;
+}
+.terminal__cursor {
+  display: inline-block;
+  width: 7px; height: 14px;
+  background: var(--accent-cool);
+  vertical-align: text-bottom;
+  animation: cursor-blink 1s step-end infinite;
+}

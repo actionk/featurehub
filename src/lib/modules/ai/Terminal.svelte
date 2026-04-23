@@ -39,7 +39,7 @@
 
   $effect(() => {
     if (active && fitAddon && term) {
-      // After display:none → visible transition, the container may not have
+      // After visibility:hidden → visible transition, the container may not have
       // final dimensions on the first frame. Retry until we get reasonable cols.
       let attempts = 0;
       function tryFitActive() {
@@ -55,6 +55,9 @@
           requestAnimationFrame(tryFitActive);
         } else {
           ptyResize(terminalId, term.cols, term.rows).catch(() => {});
+          // Force xterm to repaint — canvas renderer can drop frames while the
+          // container was visibility:hidden, leaving a black screen on return.
+          try { term!.refresh(0, term!.rows - 1); } catch {}
           term!.focus();
         }
       }
@@ -390,7 +393,7 @@
   });
 </script>
 
-<div class="terminal-wrapper">
+<div class="terminal-wrapper terminal">
   {#if searchVisible}
     <div class="terminal-search">
       <input

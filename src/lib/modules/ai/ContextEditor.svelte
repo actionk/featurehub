@@ -86,8 +86,8 @@
   );
 </script>
 
-<div class="notes-container">
-  <div class="notes-toolbar">
+<div class="notes-container glass-panel context-editor">
+  <div class="notes-toolbar context-editor__toolbar">
     {#if !hideHeader}
       <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--text-muted)" style="flex-shrink: 0;"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2.5a1 1 0 110 2 1 1 0 010-2zM6.5 7h2v5h-2z"/></svg>
       <span style="font-size: 11.5px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted);">Context</span>
@@ -95,7 +95,7 @@
     <div style="flex: 1;"></div>
     {#each [["edit", "Edit"], ["split", "Split"], ["preview", "Preview"]] as [m, label]}
       <button
-        class="notes-toolbar-btn {mode === m ? 'notes-toolbar-btn--active' : ''}"
+        class="notes-toolbar-btn btn btn--sm {mode === m ? 'notes-toolbar-btn--active btn--primary' : ''}"
         onclick={() => (mode = m as ViewMode)}
       >
         {label}
@@ -114,7 +114,7 @@
     <div class="notes-editor">
       {#if mode === "edit" || mode === "split"}
         <textarea
-          class="notes-textarea"
+          class="notes-textarea input context-editor__textarea"
           bind:value={content}
           oninput={handleInput}
           onblur={handleBlur}

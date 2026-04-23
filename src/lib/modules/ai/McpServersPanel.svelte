@@ -67,12 +67,12 @@
       {#each allServers as server (server.name)}
         {@const enabled = isServerEnabled(server)}
         <button
-          class="mcp-block"
+          class="mcp-block list-row mcp-server-row"
           class:mcp-block--on={enabled}
           onclick={() => toggleServer(server)}
         >
-          <span class="mcp-dot" class:mcp-dot--on={enabled}></span>
-          <span class="mcp-name">{server.name}</span>
+          <span class="mcp-dot check" class:mcp-dot--on={enabled} class:check--done={enabled}></span>
+          <span class="mcp-name mcp-server-row__name">{server.name}</span>
         </button>
       {/each}
     </div>
