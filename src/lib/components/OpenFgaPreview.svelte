@@ -159,6 +159,6 @@
   let tokenizedLines = $derived(tokenize(content));
 </script>
 
-<div class="openfga-preview {className}">
+<div class="openfga-preview glass-panel--soft {className}">
   <pre class="openfga-code"><code>{#each tokenizedLines as tokens, i}{#if i > 0}{"\n"}{/if}{#each tokens as token}<span class="fga-{token.type}">{token.text}</span>{/each}{/each}</code></pre>
 </div>

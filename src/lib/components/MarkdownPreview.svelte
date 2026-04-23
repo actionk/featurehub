@@ -307,6 +307,6 @@
   let safeHtml = $derived(DOMPurify.sanitize(rawHtml, { ADD_ATTR: ['class'], FORBID_TAGS: ['style'] }));
 </script>
 
-<div class="markdown-body {className}" bind:this={previewEl}>
+<div class="markdown-body markdown-preview {className}" bind:this={previewEl}>
   {@html safeHtml}
 </div>

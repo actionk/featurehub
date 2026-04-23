@@ -110,6 +110,15 @@ export function linkTypeColor(type: string | undefined | null): string {
   return map[type.toLowerCase()] ?? 'var(--accent)';
 }
 
+export function hexToAlpha(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  if (h.length !== 6) return `rgba(167,139,250,${alpha})`;
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 export function eventColor(kind: string | undefined | null): string {
   if (!kind) return 'var(--text-muted)';
   const k = kind.toLowerCase();
