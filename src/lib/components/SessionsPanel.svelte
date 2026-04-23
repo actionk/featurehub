@@ -173,10 +173,10 @@
                 {/if}
                 <span class="session-stat session-stat--time session-list-row__ago">{formatRelativeTime(session.last_activity)}</span>
                 {#if session.status === 'WaitingForInput'}
-                  <span class="session-status session-status--waiting">Waiting</span>
+                  <span class="aurora-pill aurora-pill--warn aurora-pill--sm aurora-pill--no-dot">Waiting</span>
                 {/if}
                 {#if isExternal(session.id)}
-                  <span class="session-status session-status--external">External</span>
+                  <span class="aurora-pill aurora-pill--warn aurora-pill--sm aurora-pill--no-dot">External</span>
                 {/if}
               </div>
               <div class="session-stats-row">
