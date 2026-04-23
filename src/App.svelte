@@ -464,8 +464,7 @@
 {:else if showSettings}
   <SettingsModal onClose={() => { showSettings = false; settingsInitialTab = undefined; }} storageName={activeStorage?.name ?? ""} initialTab={settingsInitialTab} />
 {:else}
-  <div class="shell-fx" aria-hidden="true"></div>
-  <div class="app-frame" class:maximized={isMaximized}>
+  <div class="app-frame aurora-bg" class:maximized={isMaximized}>
   <div class="app-shell" class:resizing={isResizing} class:storage-switching={storageSwitching}>
     <!-- Icon rail -->
     <div class="icon-rail">

@@ -175,34 +175,6 @@ button:focus-visible {
 
 #app { height: 100%; width: 100%; background: var(--bg-primary); }
 
-/* ===== SHELL FX ===== */
-
-.shell-fx {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-}
-
-.shell-fx::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 60% 45% at 72% -8%, rgba(77,124,255,0.05) 0%, transparent 58%),
-    radial-gradient(ellipse 45% 38% at 8% 88%, rgba(77,124,255,0.03) 0%, transparent 55%);
-}
-
-.ray {
-  display: none;
-}
-
-@keyframes ray-drift {
-  from { transform: translateX(-12px) rotate(-0.2deg); }
-  to   { transform: translateX(12px)  rotate(0.2deg); }
-}
-
 /* ===== APP FRAME ===== */
 
 .app-frame {
@@ -212,6 +184,7 @@ button:focus-visible {
   display: flex;
   align-items: stretch;
   box-sizing: border-box;
+  background: var(--bg-aurora);
 }
 
 /* ===== CORE LAYOUT ===== */
@@ -221,14 +194,12 @@ button:focus-visible {
   flex: 1;
   min-width: 0;
   opacity: 1;
-  transition: opacity 0.15s ease;
-  background: color-mix(in srgb, var(--bg-primary) 92%, black);
+  transition: opacity var(--dur-fast) var(--ease);
+  background: transparent;
   overflow: hidden;
 }
 
-.app-shell.storage-switching {
-  opacity: 0;
-}
+.app-shell.storage-switching { opacity: 0; }
 
 
 /* ===== ICON RAIL ===== */
@@ -237,8 +208,10 @@ button:focus-visible {
   width: 60px;
   min-width: 60px;
   height: 100%;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
+  background: var(--bg-sidebar);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -247,6 +220,7 @@ button:focus-visible {
   user-select: none;
   flex-shrink: 0;
   z-index: 10;
+  position: relative;
 }
 
 .icon-rail-logo {
@@ -259,8 +233,9 @@ button:focus-visible {
   margin-bottom: 8px;
   flex-shrink: 0;
   cursor: default;
-  background: color-mix(in srgb, var(--accent) 12%, var(--bg-raised));
+  background: var(--accent-grad);
   border: 1px solid var(--accent-border);
+  box-shadow: var(--accent-glow);
 }
 
 .icon-rail-btn {
@@ -271,7 +246,7 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
   color: var(--text-muted);
   border: 1px solid transparent;
   background: none;
@@ -346,19 +321,21 @@ button:focus-visible {
 }
 
 .icon-rail-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-secondary);
+  background: var(--accent-dim);
+  color: var(--accent-hover);
+  border-color: var(--accent-border);
 }
 
 .icon-rail-btn--on {
+  color: var(--accent-hover);
   background: var(--accent-dim);
-  color: var(--accent);
   border-color: var(--accent-border);
+  box-shadow: var(--accent-glow);
 }
 
 .icon-rail-btn--on:hover {
   background: color-mix(in srgb, var(--accent-dim) 82%, var(--bg-hover));
-  color: var(--accent);
+  color: var(--accent-hover);
 }
 
 .icon-rail-sep {
