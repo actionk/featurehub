@@ -1006,9 +1006,8 @@
                     </span>
                     <span class="feature-session-label">{term.label}</span>
                     {#if term.needsInput}
-                      <span class="sidebar-terminal-input-badge">Input</span>
-                    {/if}
-                    {#if term.statusLine && !term.needsInput}
+                      <span class="aurora-pill aurora-pill--warn aurora-pill--sm aurora-pill--no-dot sidebar-terminal-input-badge">Waiting</span>
+                    {:else if term.statusLine}
                       <span class="feature-session-status">{term.statusLine}</span>
                     {/if}
                   </button>
@@ -1020,8 +1019,8 @@
                     <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.749.749 0 011.275.326.749.749 0 01-.215.734L9.06 8l3.22 3.22a.749.749 0 01-.326 1.275.749.749 0 01-.734-.215L8 9.06l-3.22 3.22a.751.751 0 01-1.042-.018.751.751 0 01-.018-1.042L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/></svg>
                   </button>
                 </div>
-                {#if term.needsInput && term.statusLine}
-                  <div class="feature-session-status-line {term.needsInput ? 'sidebar-terminal-status--input' : ''}" style="padding-left: {40 + node.depth * 16}px;">
+                {#if term.statusLine && !term.needsInput}
+                  <div class="feature-session-status-line" style="padding-left: {40 + node.depth * 16}px;">
                     {term.statusLine}
                   </div>
                 {/if}
