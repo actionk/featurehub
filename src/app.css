@@ -618,19 +618,24 @@ button:focus-visible, .btn:focus-visible, .list-row:focus-visible, .tab:focus-vi
   padding: 6px var(--space-3);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease);
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
   margin-bottom: 0;
   width: 100%;
   text-align: left;
   border: none;
+  border-left: 3px solid transparent;
   background: transparent;
   font-family: inherit;
 }
 
 .feature-item:hover { background: var(--bg-hover); }
-.feature-item--selected { background: var(--accent-dim); }
+.feature-item--selected {
+  background: var(--accent-dim);
+  border-left-color: var(--accent);
+}
 .feature-item--selected.feature-item--session-active {
   background: rgba(167,139,250,0.06);
+  border-left-color: color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
 /* Kill primitive `.list-row--active` decoration for sidebar rows.
