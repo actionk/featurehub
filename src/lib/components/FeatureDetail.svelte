@@ -525,11 +525,11 @@
   <div class="tab-bar">
     <div class="tab-bar-tabs">
       {#each tabs as tab (tab.id)}
-        <button class="tab-btn {activeTab === tab.id ? 'tab-btn--active' : ''}" onclick={() => { switchTab(tab.id); }}
+        <button class="tab-btn tab {activeTab === tab.id ? 'tab-btn--active tab--active' : ''}" onclick={() => { switchTab(tab.id); }}
           title="{tab.label} ({tab.shortcutKey})">
           {showEmojis ? `${tab.emoji} ${tab.label}` : tab.label}
           {#each tab.getBadges(tabContext) as badge}
-            <span class="tab-count {badge.style === 'active' ? 'tab-count--active' : ''}"
+            <span class="tab-count tab__badge {badge.style === 'active' ? 'tab-count--active' : ''}"
               style="{badge.style === 'warning' ? 'background: var(--amber); color: #000;' : ''}"
               title={badge.title ?? ''}>{badge.text}</span>
           {/each}

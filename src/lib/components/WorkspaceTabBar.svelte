@@ -109,13 +109,14 @@
   }
 </script>
 
-<div class="workspace-tab-bar">
+<div class="workspace-tab-bar tab-bar">
   {#each tabs as tab (tab.id)}
     {@const isActive = tab.id === activeTabId}
     {@const status = getFeatureStatus(tab)}
     <div
-      class="workspace-tab"
+      class="workspace-tab tab"
       class:workspace-tab--active={isActive}
+      class:tab--active={isActive}
       class:workspace-tab--dragging={dragTabId === tab.id}
       class:workspace-tab--drag-left={dragOverTabId === tab.id && dragSide === "left"}
       class:workspace-tab--drag-right={dragOverTabId === tab.id && dragSide === "right"}
@@ -135,7 +136,7 @@
       <span class="workspace-tab-status" data-status={status}></span>
       <span class="workspace-tab-title">{getFeatureTitle(tab)}</span>
       <button
-        class="workspace-tab-close"
+        class="workspace-tab-close btn btn--icon btn--ghost btn--sm"
         onclick={(e) => { e.stopPropagation(); onCloseTab(tab.id); }}
         title="Close tab"
       >

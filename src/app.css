@@ -1211,44 +1211,29 @@ button:focus-visible {
 
 /* ===== WORKSPACE TAB BAR ===== */
 
+/* Primitives .tab-bar / .tab drive the base look — only layout dims here */
 .workspace-tab-bar {
-  display: flex;
   align-items: stretch;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
+  padding: 0 var(--space-2);
+  flex-wrap: nowrap;
 }
 .workspace-tab-bar::-webkit-scrollbar { display: none; }
 
 .workspace-tab {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 0 12px;
   height: 32px;
   font-size: var(--text-xs);
-  color: var(--text-muted);
-  cursor: pointer;
-  border-right: 1px solid var(--border-subtle);
   user-select: none;
   flex-shrink: 0;
   max-width: 200px;
   position: relative;
-  transition: color var(--transition-base), background var(--transition-base);
-}
-
-.workspace-tab:hover {
-  color: var(--text-secondary);
-  background: color-mix(in srgb, var(--bg-primary) 50%, var(--bg-secondary));
-}
-
-.workspace-tab--active {
-  color: var(--text-primary);
-  background: var(--bg-primary);
-  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--accent) 85%, white);
 }
 
 .workspace-tab--dragging {
@@ -1285,31 +1270,18 @@ button:focus-visible {
   white-space: nowrap;
 }
 
+/* Primitive .btn .btn--icon .btn--ghost .btn--sm drives skin — only hide-until-hover here */
 .workspace-tab-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  padding: 0;
-  flex-shrink: 0;
   opacity: 0;
-  transition: opacity var(--transition-base), background var(--transition-base), color var(--transition-base);
+  flex-shrink: 0;
+  transition: opacity var(--transition-base);
+  font-size: 13px;
+  line-height: 1;
 }
 
 .workspace-tab:hover .workspace-tab-close,
 .workspace-tab--active .workspace-tab-close {
   opacity: 1;
-}
-
-.workspace-tab-close:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
 }
 
 /* Context menu */
@@ -1566,16 +1538,8 @@ button:focus-visible {
 }
 
 /* ===== TAB BAR ===== */
-
-.tab-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2) var(--space-6);
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
-  gap: var(--space-3);
-}
+/* .tab-bar base rule removed — primitive .tab-bar (see bottom of file) drives layout.
+   FeatureDetail layout tweaks handled by wrapping .tab-bar-tabs / .tab-toolbar below. */
 
 .tab-bar-tabs {
   display: flex;
@@ -1583,32 +1547,17 @@ button:focus-visible {
   overflow-x: auto;
   min-width: 0;
   scrollbar-width: none;
+  flex: 1;
+  padding: var(--space-2) var(--space-6) 0;
 }
 
 .tab-bar-tabs::-webkit-scrollbar { display: none; }
 
+/* .tab-btn / .tab-btn--active deprecated — see .tab primitive */
 .tab-btn {
-  padding: 5px var(--space-3);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--text-muted);
-  cursor: pointer;
-  border: 1px solid transparent;
-  background: transparent;
-  transition: background var(--transition-fast), color var(--transition-fast);
   user-select: none;
-  font-family: inherit;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  border-radius: 10px;
-  margin-bottom: 0;
   white-space: nowrap;
-}
-
-.tab-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-secondary);
+  cursor: pointer;
 }
 
 .sk {
@@ -1619,41 +1568,10 @@ button:focus-visible {
   margin-left: var(--space-1);
 }
 
-.tab-btn:hover .sk {
-  opacity: 0.7;
-}
+.tab-btn:hover .sk { opacity: 0.7; }
+.tab-btn--active .sk { opacity: 0.6; }
 
-.tab-btn--active .sk {
-  opacity: 0.6;
-}
-
-.tab-btn--active {
-  background: var(--accent-dim);
-  color: var(--accent);
-  border-color: var(--accent-border);
-}
-
-.tab-btn--active:hover {
-  background: color-mix(in srgb, var(--accent-dim) 84%, var(--bg-hover));
-}
-
-.tab-count {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--text-secondary);
-  padding: 1.5px 6px;
-  border-radius: var(--radius-full);
-  font-size: 9.5px;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  line-height: 1;
-  text-align: center;
-}
-
-.tab-btn--active .tab-count {
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  color: var(--accent);
-}
-
+/* Tab count variants not covered by .tab__badge primitive */
 .tab-count--active {
   background: var(--green-dim);
   color: var(--green);
@@ -1669,6 +1587,9 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  margin-left: auto;
+  padding: var(--space-2) var(--space-6) 0 var(--space-3);
+  flex-shrink: 0;
 }
 
 .tab-toolbar-btn {
