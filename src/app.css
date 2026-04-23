@@ -656,13 +656,7 @@ button:focus-visible, .btn:focus-visible, .list-row:focus-visible, .tab:focus-vi
   text-overflow: ellipsis;
 }
 
-.feature-item-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  box-shadow: 0 0 6px currentColor;
-}
+.feature-item-status-dot { display: none; }
 
 .feature-item-pmb {
   display: flex;
