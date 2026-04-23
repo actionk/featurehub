@@ -96,27 +96,29 @@
   }
 </script>
 
-<div class="kb-panel">
+<div class="kb-panel knowledge-panel">
   <div class="kb-panel-header">
     <h2 class="kb-panel-title">Knowledge Base</h2>
-    <button class="btn-ghost btn-sm" onclick={onClose} title="Close">
+    <button class="btn btn--sm btn--icon" onclick={onClose} title="Close">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/></svg>
     </button>
   </div>
   <div class="kb-panel-body">
-    <KnowledgeFolderTree
-      {folders}
-      {entries}
-      {selectedEntryId}
-      {selectedFolderId}
-      onSelectEntry={(id) => selectedEntryId = id}
-      onSelectFolder={(id) => selectedFolderId = id}
-      onCreateEntry={handleCreateEntry}
-      onCreateFolder={handleCreateFolder}
-      onDeleteFolder={handleDeleteFolder}
-      onRenameFolder={handleRenameFolder}
-    />
-    <div class="kb-panel-editor">
+    <div class="glass-panel knowledge-panel__tree">
+      <KnowledgeFolderTree
+        {folders}
+        {entries}
+        {selectedEntryId}
+        {selectedFolderId}
+        onSelectEntry={(id) => selectedEntryId = id}
+        onSelectFolder={(id) => selectedFolderId = id}
+        onCreateEntry={handleCreateEntry}
+        onCreateFolder={handleCreateFolder}
+        onDeleteFolder={handleDeleteFolder}
+        onRenameFolder={handleRenameFolder}
+      />
+    </div>
+    <div class="glass-panel knowledge-panel__editor kb-panel-editor">
       <KnowledgeEntryEditor
         entry={selectedEntry}
         onSaved={loadData}
