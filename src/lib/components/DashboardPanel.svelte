@@ -110,7 +110,7 @@
   }
 </script>
 
-<div class="dash-root">
+<div class="dash-root dashboard">
   <div class="dash-header">
     <h2 class="dash-title">Dashboard</h2>
     <span class="dash-subtitle">{nonArchived.length} features</span>
@@ -118,29 +118,29 @@
 
   <div class="dash-body">
     <!-- Summary stat row -->
-    <div class="dash-stats">
-      <div class="dash-stat">
-        <span class="dash-stat-num">{nonArchived.length}</span>
-        <span class="dash-stat-lbl">Features</span>
+    <div class="dash-stats dashboard__grid">
+      <div class="dash-stat glass-panel dashboard__stat">
+        <span class="dash-stat-num dashboard__stat-value">{nonArchived.length}</span>
+        <span class="dash-stat-lbl dashboard__stat-label">Features</span>
       </div>
-      <div class="dash-stat">
-        <span class="dash-stat-num gt gt-s">{statusCounts.active + statusCounts.in_progress + statusCounts.in_review}</span>
-        <span class="dash-stat-lbl">In flight</span>
+      <div class="dash-stat glass-panel dashboard__stat">
+        <span class="dash-stat-num dashboard__stat-value gt gt-s">{statusCounts.active + statusCounts.in_progress + statusCounts.in_review}</span>
+        <span class="dash-stat-lbl dashboard__stat-label">In flight</span>
       </div>
-      <div class="dash-stat">
-        <span class="dash-stat-num" style="color: var(--green)">{statusCounts.done}</span>
-        <span class="dash-stat-lbl">Done</span>
+      <div class="dash-stat glass-panel dashboard__stat">
+        <span class="dash-stat-num dashboard__stat-value" style="color: var(--green)">{statusCounts.done}</span>
+        <span class="dash-stat-lbl dashboard__stat-label">Done</span>
       </div>
-      <div class="dash-stat">
-        <span class="dash-stat-num">{totalTasks > 0 ? `${doneTasks}/${totalTasks}` : '—'}</span>
-        <span class="dash-stat-lbl">Tasks done</span>
+      <div class="dash-stat glass-panel dashboard__stat">
+        <span class="dash-stat-num dashboard__stat-value">{totalTasks > 0 ? `${doneTasks}/${totalTasks}` : '—'}</span>
+        <span class="dash-stat-lbl dashboard__stat-label">Tasks done</span>
       </div>
     </div>
 
     <div class="dash-row">
       <!-- Doughnut chart -->
-      <div class="dash-card dash-card--chart">
-        <div class="dash-card-title">Status breakdown</div>
+      <div class="dash-card dash-card--chart glass-panel dashboard__section">
+        <div class="dash-card-title dashboard__section-title">Status breakdown</div>
         <div class="dash-chart-wrap">
           <canvas bind:this={chartCanvas} class="dash-chart-canvas"></canvas>
         </div>
@@ -158,8 +158,8 @@
       </div>
 
       <!-- Recent activity -->
-      <div class="dash-card dash-card--recent">
-        <div class="dash-card-title">Recently updated</div>
+      <div class="dash-card dash-card--recent glass-panel dashboard__section">
+        <div class="dash-card-title dashboard__section-title">Recently updated</div>
         <div class="dash-recent-list">
           {#each recentFeatures as f}
             <div class="dash-recent-row">

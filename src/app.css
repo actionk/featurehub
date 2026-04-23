@@ -7145,3 +7145,29 @@ a.jira-task-key:hover {
 .openfga-preview .type-name { color: var(--cyan); }
 .openfga-preview .relation  { color: var(--amber); }
 .openfga-preview .comment   { color: var(--text-faint); font-style: italic; }
+
+/* ===== STORAGE-LEVEL PANELS ===== */
+
+.dashboard { padding: 18px; display: flex; flex-direction: column; gap: 14px; height: 100%; overflow-y: auto; }
+.dashboard__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.dashboard__stat { padding: 14px 16px; }
+.dashboard__stat-value { font-size: var(--text-2xl); font-weight: var(--font-weight-bold); letter-spacing: var(--letter-spacing-tight); margin-bottom: 4px; }
+.dashboard__stat-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); color: var(--text-muted); font-weight: var(--font-weight-semibold); }
+.dashboard__section { padding: 14px; }
+.dashboard__section-title { font-size: 11px; text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); color: var(--text-muted); font-weight: var(--font-weight-bold); margin-bottom: 10px; }
+
+.sessions-panel { padding: 12px; display: flex; flex-direction: column; gap: 8px; height: 100%; overflow-y: auto; }
+.session-list-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; transition: border-color var(--dur-base) var(--ease); }
+.session-list-row:hover { border-color: var(--border-strong); }
+.session-list-row__body { flex: 1; min-width: 0; }
+.session-list-row__title { font-size: var(--text-sm); font-weight: var(--font-weight-medium); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session-list-row__meta { display: flex; gap: 10px; font-size: var(--text-xs); color: var(--text-muted); margin-top: 3px; }
+.session-list-row__model { font-family: var(--font-mono); color: var(--accent-hover); }
+.session-list-row__ago { font-family: var(--font-mono); margin-left: auto; }
+
+.extensions-panel { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.extension-row { padding: 12px; }
+.extension-row__head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.extension-row__name { font-weight: var(--font-weight-semibold); }
+.extension-row__desc { font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 10px; }
+.extension-row__actions { display: flex; align-items: center; gap: 10px; }

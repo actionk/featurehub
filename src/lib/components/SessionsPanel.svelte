@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { PanelSession } from "../api/types";
   import { getPanelSessions, getPanelActiveCount } from "../stores/sessionActivity.svelte";
-  import { getActiveTerminals, removeTerminal } from "../stores/terminals.svelte";
+  import { getActiveTerminals, removeTerminal, getViewingTerminal } from "../stores/terminals.svelte";
   import { emit } from "../stores/events.svelte";
   import { getFhCliPath, unlinkSession, finishEmbeddedSession, ptyKill } from "../api/tauri";
 
@@ -19,6 +19,13 @@
   let allSessions = $derived(getPanelSessions());
   let active = $derived(allSessions.filter(s => s.is_active));
   let recent = $derived(allSessions.filter(s => !s.is_active));
+  let viewingSessionDbId = $derived(
+    (() => {
+      const id = getViewingTerminal();
+      if (!id) return null;
+      return getActiveTerminals().find(t => t.terminalId === id)?.sessionDbId ?? null;
+    })()
+  );
   let copiedId = $state<string | null>(null);
   let contextMenu = $state<{ x: number; y: number; session: PanelSession } | null>(null);
   let unlinkConfirmId = $state<string | null>(null);
@@ -141,7 +148,7 @@
       <div class="sessions-panel-section-label">ACTIVE</div>
       <div class="sessions-panel-list">
         {#each active as session (session.id)}
-          <div class="session-row session-row--active" oncontextmenu={(e) => handleContextMenu(e, session)}>
+          <div class="session-row session-row--active glass-panel--soft session-list-row {viewingSessionDbId === session.id ? 'session-row--viewing' : ''}" oncontextmenu={(e) => handleContextMenu(e, session)}>
             {#if unlinkConfirmId === session.id}
               <div class="session-unlink-confirm" role="dialog">
                 <span class="session-unlink-confirm-text">Unlink?</span>
@@ -149,22 +156,22 @@
                 <button class="session-unlink-confirm-no" onclick={() => unlinkConfirmId = null}>No</button>
               </div>
             {/if}
-            <button class="session-row-main" onclick={() => onSessionClick(session.feature_id, session.id, true)}>
+            <button class="session-row-main session-list-row__body" onclick={() => onSessionClick(session.feature_id, session.id, true)}>
               <div class="session-row-top">
-                <span class="panel-session-dot panel-session-dot--active"></span>
+                <span class="panel-session-dot panel-session-dot--active live-dot" class:live-dot--warn={session.status === 'WaitingForInput'}></span>
                 <span class="session-feature-name">{session.feature_name}</span>
                 {#if session.branch}
                   <span class="session-branch-pill">{session.branch}</span>
                 {/if}
               </div>
               {#if session.title}
-                <div class="session-title">{session.title}</div>
+                <div class="session-title session-list-row__title">{session.title}</div>
               {/if}
-              <div class="session-stats-row">
+              <div class="session-stats-row session-list-row__meta">
                 {#if shortModel(session.model)}
-                  <span class="session-stat session-stat--model">{shortModel(session.model)}</span>
+                  <span class="session-stat session-stat--model session-list-row__model">{shortModel(session.model)}</span>
                 {/if}
-                <span class="session-stat session-stat--time">{formatRelativeTime(session.last_activity)}</span>
+                <span class="session-stat session-stat--time session-list-row__ago">{formatRelativeTime(session.last_activity)}</span>
                 {#if session.status === 'WaitingForInput'}
                   <span class="session-status session-status--waiting">Waiting</span>
                 {/if}
@@ -196,7 +203,7 @@
       <div class="sessions-panel-section-label">RECENT</div>
       <div class="sessions-panel-list">
         {#each recent as session (session.id)}
-          <div class="session-row session-row--idle" oncontextmenu={(e) => handleContextMenu(e, session)}>
+          <div class="session-row session-row--idle glass-panel--soft session-list-row {viewingSessionDbId === session.id ? 'session-row--viewing' : ''}" oncontextmenu={(e) => handleContextMenu(e, session)}>
             {#if unlinkConfirmId === session.id}
               <div class="session-unlink-confirm" role="dialog">
                 <span class="session-unlink-confirm-text">Unlink?</span>
@@ -204,22 +211,22 @@
                 <button class="session-unlink-confirm-no" onclick={() => unlinkConfirmId = null}>No</button>
               </div>
             {/if}
-            <button class="session-row-main" onclick={() => onSessionClick(session.feature_id, session.id, false)}>
+            <button class="session-row-main session-list-row__body" onclick={() => onSessionClick(session.feature_id, session.id, false)}>
               <div class="session-row-top">
-                <span class="panel-session-dot panel-session-dot--idle"></span>
+                <span class="panel-session-dot panel-session-dot--idle live-dot live-dot--static"></span>
                 <span class="session-feature-name">{session.feature_name}</span>
                 {#if session.branch}
                   <span class="session-branch-pill">{session.branch}</span>
                 {/if}
               </div>
               {#if session.title}
-                <div class="session-title">{session.title}</div>
+                <div class="session-title session-list-row__title">{session.title}</div>
               {/if}
-              <div class="session-stats-row">
+              <div class="session-stats-row session-list-row__meta">
                 {#if shortModel(session.model)}
-                  <span class="session-stat session-stat--model">{shortModel(session.model)}</span>
+                  <span class="session-stat session-stat--model session-list-row__model">{shortModel(session.model)}</span>
                 {/if}
-                <span class="session-stat session-stat--time">{formatRelativeTime(session.last_activity)}</span>
+                <span class="session-stat session-stat--time session-list-row__ago">{formatRelativeTime(session.last_activity)}</span>
               </div>
               <div class="session-stats-row">
                 {#if formatTokens(session.total_tokens)}
