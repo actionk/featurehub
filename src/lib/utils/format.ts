@@ -68,3 +68,20 @@ export function formatElapsed(isoStart: string, now: number = Date.now()): strin
   const m = diffMin % 60;
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
+
+export function fileTypeColor(ext: string | undefined | null): string {
+  if (!ext) return 'var(--text-muted)';
+  const map: Record<string, string> = {
+    md: 'var(--amber)', ts: 'var(--cyan)', tsx: 'var(--cyan)',
+    js: 'var(--amber)', jsx: 'var(--amber)',
+    svelte: 'var(--pink)', rs: 'var(--accent)',
+    toml: 'var(--text-muted)', json: 'var(--green)',
+    css: 'var(--blue)', html: 'var(--red)',
+    sql: 'var(--violet)', py: 'var(--cyan)',
+    png: 'var(--pink)', jpg: 'var(--pink)', jpeg: 'var(--pink)',
+    svg: 'var(--violet)', gif: 'var(--pink)', webp: 'var(--pink)',
+    pdf: 'var(--red)', txt: 'var(--text-secondary)',
+    sh: 'var(--green)', bash: 'var(--green)', zsh: 'var(--green)',
+  };
+  return map[ext.toLowerCase()] ?? 'var(--text-muted)';
+}

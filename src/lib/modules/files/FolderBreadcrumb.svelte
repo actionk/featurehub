@@ -61,13 +61,13 @@
   }
 </script>
 
-<div class="breadcrumb">
-  <button class="breadcrumb__item breadcrumb__item--clickable" onclick={() => onNavigate(null)}>
+<div class="breadcrumb folder-breadcrumb">
+  <button class="breadcrumb__item breadcrumb__item--clickable aurora-pill aurora-pill--no-dot aurora-pill--muted" onclick={() => onNavigate(null)}>
     <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5l1 1h6v10H2V2zm1 1v9h10V4H7.5L6.5 3H3z"/></svg>
     Files
   </button>
   {#each breadcrumbPath as crumb, i}
-    <span class="breadcrumb__separator">/</span>
+    <span class="breadcrumb__separator folder-breadcrumb__sep">/</span>
     {#if renamingId === crumb.id}
       <input
         type="text"
@@ -79,7 +79,7 @@
       />
     {:else if i < breadcrumbPath.length - 1}
       <button
-        class="breadcrumb__item breadcrumb__item--clickable"
+        class="breadcrumb__item breadcrumb__item--clickable aurora-pill aurora-pill--no-dot aurora-pill--muted"
         onclick={() => onNavigate(crumb.id)}
         ondblclick={() => startRename(crumb)}
       >
@@ -87,7 +87,7 @@
       </button>
     {:else}
       <span
-        class="breadcrumb__item breadcrumb__item--current"
+        class="breadcrumb__item breadcrumb__item--current aurora-pill aurora-pill--no-dot"
         role="button"
         tabindex="0"
         ondblclick={() => startRename(crumb)}
