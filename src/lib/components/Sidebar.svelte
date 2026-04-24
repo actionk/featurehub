@@ -3,7 +3,7 @@
   import { duplicateFeature, togglePinFeature, setFeatureArchived, updateFeature, deleteFeature, setFeatureParent, reorderFeatures, createFeatureGroup, updateFeatureGroup, deleteFeatureGroup, reorderFeatureGroups, setFeatureGroup, updateStorageIcon, getStorages } from "../api/tauri";
   import StorageSelector from "./StorageSelector.svelte";
   import { formatRelativeTime } from "../utils/format";
-  import { getActiveTerminals, getViewingTerminal } from "../stores/terminals.svelte";
+  import { getActiveTerminals, getViewingTerminal, requestShowOverview } from "../stores/terminals.svelte";
   import { getActiveCountForFeature, isAnySessionWaitingForFeature } from "../stores/sessionActivity.svelte";
 
   let {
@@ -21,7 +21,6 @@
     onFeaturesChanged,
     onSelectTerminal,
     onSelectSessions,
-    onSelectNewTab,
     onFinishTerminal,
     width,
   }: {
@@ -39,7 +38,6 @@
     onFeaturesChanged?: () => void;
     onSelectTerminal?: (featureId: string, terminalId: string) => void;
     onSelectSessions?: (featureId: string) => void;
-    onSelectNewTab?: (featureId: string) => void;
     onFinishTerminal?: (terminalId: string, sessionDbId: string) => void;
     width?: number;
   } = $props();
@@ -798,7 +796,7 @@
   </div>
 
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="search-trigger input input--search" onclick={() => onOpenSearch?.()}
+  <div class="search-trigger" onclick={() => onOpenSearch?.()}
     onkeydown={(e) => { if (e.key === 'Enter') onOpenSearch?.(); }}
   >
     <svg width="13" height="13" viewBox="0 0 16 16" fill="var(--text-muted)">
@@ -882,6 +880,9 @@
             {@const feature = node.feature}
             {@const isOver = dropTargetId === feature.id}
             <!-- svelte-ignore a11y_no_static_element_interactions -->
+            {@const hasSessions = terminalsByFeature.has(feature.id)}
+            {@const sessions = terminalsByFeature.get(feature.id) ?? []}
+            {@const hasViewing = !!viewingTerminalId && sessions.some(t => t.terminalId === viewingTerminalId)}
             <div
               class="feature-item-wrapper"
               class:feature-item-drop-above={isOver && dropZone === "above"}
@@ -889,47 +890,48 @@
               class:feature-item-drop-below={isOver && dropZone === "below"}
               class:feature-item-dragging={draggingId === feature.id}
               data-feature-id={feature.id}
+              style="padding-left: {node.depth * 16}px;"
             >
-              <button
-                class="feature-item feature-item--status-{feature.status} {selectedId === feature.id ? 'feature-item--selected' : ''} {feature.archived ? 'feature-item--archived' : ''} {viewingTerminalId && terminalsByFeature.get(feature.id)?.some(t => t.terminalId === viewingTerminalId) ? 'feature-item--session-active' : ''}"
-                style="padding-left: {10 + node.depth * 16}px;"
+              <div
+                class="feature-unit"
+                class:feature-unit--selected={selectedId === feature.id}
+                class:feature-unit--has-viewing={hasViewing && selectedId !== feature.id}
+                class:feature-unit--archived={feature.archived}
+                class:feature-unit--dragging={draggingId === feature.id}
+                role="button"
+                tabindex="0"
                 onmousedown={(e) => handleMouseDown(e, feature)}
-                onclick={(e: MouseEvent) => {
+                oncontextmenu={(e) => handleContextMenu(e, feature)}
+                onclick={() => {
                   if (draggingId || justDropped) return;
-                  // Ctrl/Cmd+Click opens in a new workspace tab
-                  if ((e.ctrlKey || e.metaKey) && onSelectNewTab) {
-                    onSelectNewTab(feature.id);
+                  if (selectedId === feature.id && viewingTerminalId &&
+                      sessions.some(t => t.terminalId === viewingTerminalId)) {
+                    requestShowOverview();
                     return;
-                  }
-                  // If already selected and has embedded terminals, open the first one
-                  if (selectedId === feature.id) {
-                    const terms = terminalsByFeature.get(feature.id);
-                    if (terms && terms.length > 0) {
-                      onSelectTerminal?.(feature.id, terms[0].terminalId);
-                      return;
-                    }
                   }
                   onSelect(feature.id);
                 }}
-                oncontextmenu={(e) => handleContextMenu(e, feature)}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect(feature.id);
+                  }
+                }}
               >
-                {#if feature.pinned}
-                  <svg class="pin-icon" width="10" height="10" viewBox="0 0 16 16" fill="var(--accent)">
-                    <path d="M9.828.722a.5.5 0 01.354.146l4.95 4.95a.5.5 0 01-.707.707l-.707-.707-3.182 3.182a3.5 3.5 0 01-.564.41l-2.05 1.166a.5.5 0 01-.639-.112l-.41-.41-3.96 3.96a.5.5 0 01-.707-.707l3.96-3.96-.41-.41a.5.5 0 01-.112-.639l1.166-2.05a3.5 3.5 0 01.41-.564l3.182-3.182-.707-.707a.5.5 0 01.146-.854z"/>
-                  </svg>
-                {/if}
-                  <div
-                    class="feature-item-compact list-row"
-                    class:list-row--active={selectedId === feature.id}
-                  >
-                    <span class="feature-item-status-dot" style="background: {statusColors[feature.status] ?? 'var(--text-muted)'}; color: {statusColors[feature.status] ?? 'var(--text-muted)'};"></span>
-                    <span class="feature-item-title">{feature.title}</span>
+                <div class="unit-head">
+                  {#if feature.pinned}
+                    <svg class="pin-icon" width="10" height="10" viewBox="0 0 16 16" fill="var(--accent)">
+                      <path d="M9.828.722a.5.5 0 01.354.146l4.95 4.95a.5.5 0 01-.707.707l-.707-.707-3.182 3.182a3.5 3.5 0 01-.564.41l-2.05 1.166a.5.5 0 01-.639-.112l-.41-.41-3.96 3.96a.5.5 0 01-.707-.707l3.96-3.96-.41-.41a.5.5 0 01-.112-.639l1.166-2.05a3.5 3.5 0 01.41-.564l3.182-3.182-.707-.707a.5.5 0 01.146-.854z"/>
+                    </svg>
+                  {/if}
+                  <span class="unit-head__title">{feature.title}</span>
+                  <div class="unit-head__right">
                     {#if (feature.task_count_total ?? 0) > 0}
-                      <div class="feature-item-pmb">
-                        <div class="feature-item-pmb-track">
-                          <div class="feature-item-pmb-fill" style="width: {Math.round(((feature.task_count_done ?? 0) / (feature.task_count_total ?? 1)) * 100)}%;"></div>
+                      <div class="unit-head__pmb">
+                        <div class="unit-head__pmb-track">
+                          <div class="unit-head__pmb-fill" style="width: {Math.round(((feature.task_count_done ?? 0) / (feature.task_count_total ?? 1)) * 100)}%;"></div>
                         </div>
-                        <span class="feature-item-pmb-label">{feature.task_count_done ?? 0}/{feature.task_count_total}</span>
+                        <span class="unit-head__pmb-label">{feature.task_count_done ?? 0}/{feature.task_count_total}</span>
                       </div>
                     {/if}
                     {#if getActiveCountForFeature(feature.id) > 0}
@@ -945,10 +947,6 @@
                         tabindex="-1"
                         onclick={(e: MouseEvent) => {
                           e.stopPropagation();
-                          // Ctrl/Cmd+Click opens in a new workspace tab first
-                          if ((e.ctrlKey || e.metaKey) && onSelectNewTab) {
-                            onSelectNewTab(feature.id);
-                          }
                           const terms = terminalsByFeature.get(feature.id);
                           if (terms && terms.length > 0) {
                             onSelectTerminal?.(feature.id, terms[0].terminalId);
@@ -971,61 +969,47 @@
                       </span>
                     {/if}
                   </div>
-              </button>
-            </div>
-            <!-- Running terminal sessions under this feature -->
-            {#if terminalsByFeature.has(feature.id)}
-              {#each terminalsByFeature.get(feature.id) ?? [] as term (term.terminalId)}
-                <div
-                  class="feature-session-item {term.exited ? 'feature-session-item--exited' : ''} {term.needsInput ? 'feature-session-item--input' : ''} {viewingTerminalId === term.terminalId ? 'feature-session-item--viewing' : ''}"
-                  style="padding-left: {26 + node.depth * 16}px;"
-                  onmousedown={(e) => e.stopPropagation()}
-                  onclick={(e: MouseEvent) => {
-                    e.stopPropagation();
-                    // Ctrl/Cmd+Click opens in a new workspace tab, then navigates to terminal
-                    if ((e.ctrlKey || e.metaKey) && onSelectNewTab) {
-                      onSelectNewTab(term.featureId);
-                    }
-                    onSelectTerminal?.(term.featureId, term.terminalId);
-                  }}
-                  onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onSelectTerminal?.(term.featureId, term.terminalId); } }}
-                  role="button"
-                  tabindex="0"
-                >
-                  <button
-                    class="feature-session-main"
-                  >
-                    <span class="sidebar-terminal-dot-wrap">
-                      {#if term.exited}
-                        <span class="terminal-tab-dot"></span>
-                      {:else if term.needsInput}
-                        <span class="sidebar-terminal-input-dot"></span>
-                      {:else}
-                        <span class="terminal-tab-dot terminal-tab-dot--live"></span>
-                      {/if}
-                    </span>
-                    <span class="feature-session-label">{term.label}</span>
-                    {#if term.needsInput}
-                      <span class="aurora-pill aurora-pill--warn aurora-pill--sm aurora-pill--no-dot sidebar-terminal-input-badge">Waiting</span>
-                    {:else if term.statusLine}
-                      <span class="feature-session-status">{term.statusLine}</span>
-                    {/if}
-                  </button>
-                  <button
-                    class="feature-session-finish"
-                    onclick={(e) => { e.stopPropagation(); onFinishTerminal?.(term.terminalId, term.sessionDbId); }}
-                    title="Finish session"
-                  >
-                    <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.749.749 0 011.275.326.749.749 0 01-.215.734L9.06 8l3.22 3.22a.749.749 0 01-.326 1.275.749.749 0 01-.734-.215L8 9.06l-3.22 3.22a.751.751 0 01-1.042-.018.751.751 0 01-.018-1.042L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/></svg>
-                  </button>
                 </div>
-                {#if term.statusLine && !term.needsInput}
-                  <div class="feature-session-status-line" style="padding-left: {40 + node.depth * 16}px;">
-                    {term.statusLine}
+
+                {#if hasSessions}
+                  <div class="sub-list">
+                    {#each sessions as term (term.terminalId)}
+                      {@const isViewing = viewingTerminalId === term.terminalId && selectedId === feature.id}
+                      <!-- svelte-ignore a11y_no_static_element_interactions -->
+                      <div
+                        class="sub-session"
+                        class:sub-session--waiting={term.needsInput && !isViewing}
+                        class:sub-session--viewing={isViewing}
+                        class:sub-session--exited={term.exited}
+                        role="button"
+                        tabindex="0"
+                        onmousedown={(e) => e.stopPropagation()}
+                        onclick={(e: MouseEvent) => {
+                          e.stopPropagation();
+                          onSelectTerminal?.(term.featureId, term.terminalId);
+                        }}
+                        onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onSelectTerminal?.(term.featureId, term.terminalId); } }}
+                      >
+                        <span class="sub-session__dot"></span>
+                        <span class="sub-session__label">{term.label}</span>
+                        {#if term.needsInput}
+                          <span class="aurora-pill aurora-pill--warn aurora-pill--sm aurora-pill--no-dot">Waiting</span>
+                        {:else if term.statusLine}
+                          <span class="sub-session__meta">{term.statusLine}</span>
+                        {/if}
+                        <button
+                          class="sub-session__finish"
+                          onclick={(e) => { e.stopPropagation(); onFinishTerminal?.(term.terminalId, term.sessionDbId); }}
+                          title="Finish session"
+                        >
+                          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.749.749 0 011.275.326.749.749 0 01-.215.734L9.06 8l3.22 3.22a.749.749 0 01-.326 1.275.749.749 0 01-.734-.215L8 9.06l-3.22 3.22a.751.751 0 01-1.042-.018.751.751 0 01-.018-1.042L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/></svg>
+                        </button>
+                      </div>
+                    {/each}
                   </div>
                 {/if}
-              {/each}
-            {/if}
+              </div>
+            </div>
           {/each}
         {/if}
       {/each}
