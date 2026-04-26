@@ -1,7 +1,5 @@
 <script lang="ts">
   import type { Link } from "../../api/tauri";
-  import { getLinkTypeInfo } from "../../utils/linkTypes";
-  import { linkTypeColor } from "../../utils/format";
   import { open as shellOpen } from "@tauri-apps/plugin-shell";
 
   let {
@@ -26,17 +24,6 @@
       console.error("Failed to copy URL:", e);
     }
   }
-  let info = $derived(getLinkTypeInfo(link.link_type));
-
-  function isLightColor(hex: string): boolean {
-    const c = hex.replace('#', '');
-    const r = parseInt(c.substring(0, 2), 16);
-    const g = parseInt(c.substring(2, 4), 16);
-    const b = parseInt(c.substring(4, 6), 16);
-    return (r * 299 + g * 587 + b * 114) / 1000 > 160;
-  }
-
-  let badgeTextColor = $derived(isLightColor(info.color) ? '#000' : '#fff');
 
   function truncateUrl(url: string, max = 50): string {
     try {
@@ -67,8 +54,6 @@
   tabindex="0"
   onkeydown={(e) => { if (e.key === 'Enter') openUrl(); }}
 >
-  <span class="link-card__icon" style="background: {linkTypeColor(link.link_type)}; color: {linkTypeColor(link.link_type)};"></span>
-  <span class="link-type-badge aurora-pill aurora-pill--muted aurora-pill--sm aurora-pill--no-dot" style="background: {info.color}; color: {badgeTextColor};">{info.label}</span>
   <span class="link-row-title link-card__title">{link.title}</span>
   {#if link.description}
     <span class="link-row-desc">{link.description}</span>

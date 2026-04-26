@@ -5,7 +5,6 @@
   import { removeTerminal, restoreTerminals, getActiveTerminals, requestResumeSession } from "./lib/stores/terminals.svelte";
   import Sidebar from "./lib/components/Sidebar.svelte";
   import FeatureDetail from "./lib/components/FeatureDetail.svelte";
-  import WorkspaceTabBar from "./lib/components/WorkspaceTabBar.svelte";
   import SearchBar from "./lib/components/SearchBar.svelte";
   import CreateFeatureModal from "./lib/components/CreateFeatureModal.svelte";
   import StorageSetup from "./lib/components/StorageSetup.svelte";
@@ -17,30 +16,10 @@
   import ToastContainer from "./lib/components/ToastContainer.svelte";
   import { loadAppSettings } from "./lib/stores/settings.svelte";
   import { requestViewTerminal } from "./lib/stores/terminals.svelte";
-  import { subscribe, emit } from "./lib/stores/events.svelte";
+  import { emit } from "./lib/stores/events.svelte";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { listen } from "@tauri-apps/api/event";
   import { startSessionActivityPolling, refreshSessionActivity } from "./lib/stores/sessionActivity.svelte";
-  import {
-    getWorkspaceTabs,
-    getActiveTabId,
-    getActiveFeatureId,
-    getOpenFeatureIds,
-    openTab,
-    switchToFeature,
-    switchToTab,
-    closeTab,
-    closeOtherTabs,
-    closeAllTabs,
-    closeTabForFeature,
-    clearWorkspaceTabs,
-    pruneInvalidTabs,
-    nextTab,
-    prevTab,
-    isBoardTab,
-    BOARD_TAB_FEATURE_ID,
-    openBoardTab,
-  } from "./lib/stores/workspaceTabs.svelte";
 
   let features = $state<Feature[]>([]);
   let featureGroups = $state<FeatureGroup[]>([]);
@@ -51,7 +30,7 @@
   let activeStorage = $state<StorageInfo | null>(null);
   let storageChecked = $state(false);
   let storageSwitching = $state(false);
-  type MainView = 'features' | 'knowledge' | 'dashboard' | 'timeline';
+  type MainView = 'features' | 'knowledge' | 'timeline' | 'board';
   let activeView = $state<MainView>('features');
   // Sessions panel — always visible, resizable
   const SESSIONS_PANEL_MIN = 180;
@@ -87,10 +66,14 @@
     window.addEventListener("mouseup", onUp);
   }
 
-  // Workspace tabs — derived state
-  let workspaceTabs = $derived(getWorkspaceTabs());
-  let activeTabId = $derived(getActiveTabId());
-  let selectedId = $derived(getActiveFeatureId());
+  // Single selected feature
+  let selectedId = $state<string | null>(localStorage.getItem("featurehub:lastFeatureId"));
+
+  function selectFeature(id: string | null) {
+    selectedId = id;
+    if (id) localStorage.setItem("featurehub:lastFeatureId", id);
+    else localStorage.removeItem("featurehub:lastFeatureId");
+  }
 
   // Toast notifications
   interface Toast {
@@ -189,15 +172,14 @@
   // Poll for notifications from MCP
   $effect(() => {
     if (!activeStorage) return;
-    const openFeatureIds = getOpenFeatureIds();
     const interval = setInterval(async () => {
       try {
         const notifs = await pollNotifications();
         let needsFeatureReload = false;
         for (const n of notifs) {
           addToast(n.message, n.feature_id);
-          // Refresh any open tab whose feature matches
-          if (n.feature_id && openFeatureIds.includes(n.feature_id)) {
+          // Refresh detail if it matches the currently selected feature
+          if (n.feature_id && n.feature_id === selectedId) {
             refreshFeatureId = n.feature_id;
             if (n.plan_id) {
               pendingPlanId = n.plan_id;
@@ -242,7 +224,7 @@
   }
 
   function handleToastClick(featureId: string) {
-    switchToFeature(featureId);
+    selectFeature(featureId);
   }
 
   $effect(() => {
@@ -250,14 +232,6 @@
       if ((e.ctrlKey || e.metaKey) && e.code === "KeyT") {
         e.preventDefault();
         showSearch = !showSearch;
-      }
-      // Tab to toggle dashboard/features, F3/F4 for knowledge/timeline
-      if (e.code === "Tab" && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
-        const tag = (e.target as HTMLElement)?.tagName;
-        if (tag !== "INPUT" && tag !== "TEXTAREA" && !(e.target as HTMLElement)?.isContentEditable) {
-          e.preventDefault();
-          activeView = activeView === 'dashboard' ? 'features' : 'dashboard';
-        }
       }
       if (e.code === "F3") { e.preventDefault(); activeView = 'knowledge'; }
       if (e.code === "F4") { e.preventDefault(); activeView = 'timeline'; }
@@ -268,24 +242,6 @@
       if ((e.ctrlKey || e.metaKey) && e.altKey && e.code === "KeyS") {
         e.preventDefault();
         showSettings = !showSettings;
-      }
-      // Ctrl+W to close active workspace tab
-      if ((e.ctrlKey || e.metaKey) && e.code === "KeyW") {
-        if (activeTabId && workspaceTabs.length > 0) {
-          e.preventDefault();
-          closeTab(activeTabId);
-        }
-      }
-      // Ctrl+Tab / Ctrl+Shift+Tab to cycle workspace tabs
-      if ((e.ctrlKey || e.metaKey) && e.code === "Tab") {
-        if (workspaceTabs.length > 1) {
-          e.preventDefault();
-          if (e.shiftKey) {
-            prevTab();
-          } else {
-            nextTab();
-          }
-        }
       }
       // Shift+1 through Shift+9 to switch storages
       if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && e.code >= "Digit1" && e.code <= "Digit9") {
@@ -327,15 +283,9 @@
       const [f, g] = await Promise.all([getFeatures(), getFeatureGroups()]);
       features = f;
       featureGroups = g;
-      // Prune workspace tabs for features that no longer exist
-      const validIds = new Set(features.map(f => f.id));
-      pruneInvalidTabs(validIds);
-      // Restore last active feature on initial load (if no workspace tabs)
-      if (workspaceTabs.length === 0) {
-        const lastId = localStorage.getItem("featurehub:lastFeatureId");
-        if (lastId && features.some((f) => f.id === lastId)) {
-          switchToFeature(lastId);
-        }
+      // Clear selection if the selected feature no longer exists
+      if (selectedId && !features.some((f) => f.id === selectedId)) {
+        selectFeature(null);
       }
     } catch (e) {
       console.error("Failed to load features:", e);
@@ -343,18 +293,8 @@
   }
 
   function handleSelect(id: string) {
-    if (!id) {
-      if (activeTabId) closeTab(activeTabId);
-      localStorage.removeItem("featurehub:lastFeatureId");
-      return;
-    }
-    switchToFeature(id);
-    localStorage.setItem("featurehub:lastFeatureId", id);
-  }
-
-  function handleSelectNewTab(id: string) {
-    openTab(id);
-    localStorage.setItem("featurehub:lastFeatureId", id);
+    selectFeature(id || null);
+    if (id) activeView = 'features';
   }
 
   function handleCreateNew() {
@@ -364,22 +304,13 @@
   function handleCreated(feature: Feature) {
     showCreateModal = false;
     loadFeatures();
-    openTab(feature.id);
-    localStorage.setItem("featurehub:lastFeatureId", feature.id);
+    selectFeature(feature.id);
+    activeView = 'features';
   }
 
   async function handleDeleted() {
-    // Close the tab for the deleted feature
-    if (selectedId) {
-      closeTabForFeature(selectedId);
-    }
-    localStorage.removeItem("featurehub:lastFeatureId");
+    selectFeature(null);
     await loadFeatures();
-    // Update lastFeatureId to current active
-    const currentId = getActiveFeatureId();
-    if (currentId) {
-      localStorage.setItem("featurehub:lastFeatureId", currentId);
-    }
   }
 
   const entityTypeToTab: Record<string, string> = {
@@ -392,14 +323,15 @@
   function handleSearchSelect(featureId: string, entityType: string) {
     initialTab = entityTypeToTab[entityType] || null;
     initialTabTargetId = featureId;
-    openTab(featureId);
+    selectFeature(featureId);
+    activeView = 'features';
     showSearch = false;
   }
 
   function handleStorageCreated(storage: StorageInfo) {
     activeStorage = storage;
     features = [];
-    clearWorkspaceTabs();
+    selectFeature(null);
   }
 
   async function handleStorageSwitch() {
@@ -407,7 +339,7 @@
     await new Promise(r => setTimeout(r, 150));
     activeStorage = await getActiveStorage();
     features = [];
-    clearWorkspaceTabs();
+    selectFeature(null);
     if (activeStorage) {
       await loadFeatures();
     }
@@ -425,7 +357,7 @@
       await switchStorage(target.id);
       activeStorage = await getActiveStorage();
       features = [];
-      clearWorkspaceTabs();
+      selectFeature(null);
       if (activeStorage) {
         await loadFeatures();
       }
@@ -437,22 +369,13 @@
   }
 
   function handleSessionPanelClick(featureId: string, sessionDbId: string, isActive: boolean) {
-    openTab(featureId);
+    selectFeature(featureId);
+    activeView = 'features';
     initialTab = "ai";
     initialTabTargetId = featureId;
     const isRunningExternally = isActive && !getActiveTerminals().some(t => t.sessionDbId === sessionDbId);
     if (!isRunningExternally) {
       requestResumeSession(sessionDbId);
-    }
-  }
-
-  function handleCloseTab(tabId: string) {
-    closeTab(tabId);
-    const currentId = getActiveFeatureId();
-    if (currentId) {
-      localStorage.setItem("featurehub:lastFeatureId", currentId);
-    } else {
-      localStorage.removeItem("featurehub:lastFeatureId");
     }
   }
 </script>
@@ -472,23 +395,7 @@
         <img src="/icon.png" alt="FeatureHub" width="22" height="22" style="border-radius: 4px;" />
       </div>
 
-      <button class="icon-rail-btn icon-rail-btn--keyed" class:icon-rail-btn--on={activeView === 'dashboard'} data-tip="Dashboard  Tab" aria-label="Dashboard"
-        onclick={() => { activeView = 'dashboard'; }}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <rect x="0" y="0" width="4" height="3" rx="1"/>
-          <rect x="0" y="4" width="4" height="3" rx="1"/>
-          <rect x="0" y="8" width="4" height="3" rx="1"/>
-          <rect x="0" y="12" width="4" height="3" rx="1"/>
-          <rect x="6" y="0" width="4" height="3" rx="1"/>
-          <rect x="6" y="4" width="4" height="3" rx="1"/>
-          <rect x="6" y="8" width="4" height="3" rx="1"/>
-          <rect x="12" y="0" width="4" height="3" rx="1"/>
-          <rect x="12" y="4" width="4" height="3" rx="1"/>
-        </svg>
-        <span class="icon-rail-key">⇥</span>
-      </button>
-
-      <button class="icon-rail-btn icon-rail-btn--keyed" class:icon-rail-btn--on={activeView === 'features'} data-tip="Features  Tab" aria-label="Features"
+      <button class="icon-rail-btn icon-rail-btn--keyed" class:icon-rail-btn--on={activeView === 'features'} data-tip="Features" aria-label="Features"
         onclick={() => { activeView = 'features'; }}>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
           <rect x="0" y="0" width="3" height="3" rx="1"/>
@@ -498,7 +405,6 @@
           <rect x="0" y="12" width="3" height="3" rx="1"/>
           <rect x="5" y="12" width="9" height="3" rx="1"/>
         </svg>
-        <span class="icon-rail-key">⇥</span>
       </button>
 
       <button class="icon-rail-btn icon-rail-btn--keyed" class:icon-rail-btn--on={activeView === 'knowledge'} data-tip="Knowledge  F3" aria-label="Knowledge"
@@ -562,20 +468,18 @@
       onFeaturesChanged={loadFeatures}
       onSelectTerminal={(fid, tid) => {
         requestViewTerminal(tid);
-        openTab(fid);
+        selectFeature(fid);
+        activeView = 'features';
         initialTab = "ai";
         initialTabTargetId = fid;
       }}
       onSelectSessions={(fid) => {
-        openTab(fid);
+        selectFeature(fid);
+        activeView = 'features';
         initialTab = "ai";
         initialTabTargetId = fid;
       }}
-      onSelectNewTab={handleSelectNewTab}
-      onOpenBoard={() => {
-        activeView = 'features';
-        openBoardTab();
-      }}
+      onOpenBoard={() => activeView = 'board'}
       onOpenKnowledge={() => activeView = 'knowledge'}
       onFinishTerminal={async (tid, sid) => {
         await ptyKill(tid).catch(() => {});
@@ -590,55 +494,27 @@
     <div class="resize-handle" onmousedown={onResizeStart}></div>
 
     <div class="main-content">
-      {#if activeView === 'dashboard'}
-        <BoardPanel />
-      {:else if activeView === 'timeline'}
+      {#if activeView === 'timeline'}
         <GlobalTimeline />
       {:else if activeView === 'knowledge'}
         <KnowledgePanel onClose={() => activeView = 'features'} />
-      {:else if workspaceTabs.length > 0}
-        {#if workspaceTabs.length >= 2}
-          <WorkspaceTabBar
-            tabs={workspaceTabs}
-            {activeTabId}
-            {features}
-            onSwitchTab={(tabId) => {
-              switchToTab(tabId);
-              const fid = getActiveFeatureId();
-              if (fid) localStorage.setItem("featurehub:lastFeatureId", fid);
-            }}
-            onCloseTab={handleCloseTab}
-            onCloseOtherTabs={closeOtherTabs}
-            onCloseAllTabs={() => {
-              closeAllTabs();
-              localStorage.removeItem("featurehub:lastFeatureId");
-            }}
-          />
-        {/if}
-        {#each workspaceTabs as tab (tab.id)}
-          {@const isActive = tab.id === activeTabId}
-          <div class="tab-content-wrapper" style:display={isActive ? '' : 'none'}>
-            {#if isBoardTab(tab)}
-              <BoardPanel />
-            {:else}
-              <FeatureDetail
-                featureId={tab.featureId}
-                {isActive}
-                onDeleted={handleDeleted}
-                onUpdated={loadFeatures}
-                onSessionsChanged={() => refreshSessionActivity()}
-                {refreshFeatureId}
-                onRefreshHandled={() => refreshFeatureId = null}
-                {pendingPlanId}
-                {pendingPlanFeatureId}
-                onPendingPlanHandled={() => { pendingPlanId = null; pendingPlanFeatureId = null; }}
-                initialTab={initialTabTargetId === tab.featureId ? initialTab : null}
-                onInitialTabHandled={() => { initialTab = null; initialTabTargetId = null; }}
-                onOpenSettings={(tab) => { settingsInitialTab = tab; showSettings = true; }}
-              />
-            {/if}
-          </div>
-        {/each}
+      {:else if activeView === 'board'}
+        <BoardPanel onOpenFeature={(fid) => { selectFeature(fid); activeView = 'features'; }} />
+      {:else if selectedId}
+        <FeatureDetail
+          featureId={selectedId}
+          onDeleted={handleDeleted}
+          onUpdated={loadFeatures}
+          onSessionsChanged={() => refreshSessionActivity()}
+          {refreshFeatureId}
+          onRefreshHandled={() => refreshFeatureId = null}
+          {pendingPlanId}
+          {pendingPlanFeatureId}
+          onPendingPlanHandled={() => { pendingPlanId = null; pendingPlanFeatureId = null; }}
+          initialTab={initialTabTargetId === selectedId ? initialTab : null}
+          onInitialTabHandled={() => { initialTab = null; initialTabTargetId = null; }}
+          onOpenSettings={(tab) => { settingsInitialTab = tab; showSettings = true; }}
+        />
       {:else}
         <div class="empty-state">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2">

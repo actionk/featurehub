@@ -449,13 +449,17 @@
     }
   });
 
-  // Check if sidebar requested viewing a specific terminal
+  // Check if sidebar requested viewing a specific terminal or showing the overview
   let lastViewVersion = -1;
   $effect(() => {
     const req = getPendingViewRequest();
     // Also read featureTerminals so this effect re-runs when terminals change
     const terms = featureTerminals;
-    if (req.version !== lastViewVersion && req.terminalId) {
+    if (req.version === lastViewVersion) return;
+    if (req.isClear) {
+      lastViewVersion = req.version;
+      activeTerminalId = null;
+    } else if (req.terminalId) {
       if (terms.some(t => t.terminalId === req.terminalId)) {
         lastViewVersion = req.version;
         activeTerminalId = req.terminalId;
@@ -855,9 +859,21 @@
         {#if embeddedActiveSessions.length === 0}
           <div class="sc-start-cta">
             <span class="sc-start-hint">No active session</span>
-            <button class="sc-start-btn" onclick={() => handleStartSession()} disabled={launching}>
-              {launching ? 'Starting…' : '▶ Start Session'}
-            </button>
+            <div class="sc-start-actions">
+              <button class="sc-start-btn" onclick={() => handleStartSession()} disabled={launching}>
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11l10-5.5z"/></svg>
+                <span>{launching ? 'Starting…' : 'Start Session'}</span>
+              </button>
+              <button
+                class="sc-start-btn sc-start-btn--danger"
+                onclick={() => handleStartSession(undefined, true)}
+                disabled={launching}
+                title="Start with --dangerously-skip-permissions (no tool prompts)"
+              >
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm-.75 4a.75.75 0 011.5 0v4a.75.75 0 01-1.5 0V5zM8 12a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                <span>Full-Access</span>
+              </button>
+            </div>
             {#if contextEmpty}
               <button
                 class="sc-start-btn sc-start-btn--init"

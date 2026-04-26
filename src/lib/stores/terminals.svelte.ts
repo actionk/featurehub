@@ -71,17 +71,26 @@ export function getPendingResumeRequest(): { sessionDbId: string | null; version
   return { sessionDbId: pendingResumeSessionDbId, version: pendingResumeVersion };
 }
 
-// Pending terminal to view (set by sidebar, consumed by AiPanel)
+// Pending terminal to view (set by sidebar, consumed by AiPanel).
+// terminalId === null means "show overview" (close any open terminal).
 let pendingViewTerminalId = $state<string | null>(null);
 let pendingViewVersion = $state(0);
+let pendingViewIsClear = $state(false);
 
 export function requestViewTerminal(terminalId: string) {
   pendingViewTerminalId = terminalId;
+  pendingViewIsClear = false;
   pendingViewVersion++;
 }
 
-export function getPendingViewRequest(): { terminalId: string | null; version: number } {
-  return { terminalId: pendingViewTerminalId, version: pendingViewVersion };
+export function requestShowOverview() {
+  pendingViewTerminalId = null;
+  pendingViewIsClear = true;
+  pendingViewVersion++;
+}
+
+export function getPendingViewRequest(): { terminalId: string | null; isClear: boolean; version: number } {
+  return { terminalId: pendingViewTerminalId, isClear: pendingViewIsClear, version: pendingViewVersion };
 }
 
 export function consumePendingView(): string | null {
