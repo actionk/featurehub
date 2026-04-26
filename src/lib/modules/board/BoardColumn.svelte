@@ -8,6 +8,7 @@
     color,
     features,
     dragOver = false,
+    draggingId = null,
     onOpen,
     onArchive,
     onDragStart,
@@ -17,6 +18,7 @@
     color: string;
     features: Feature[];
     dragOver?: boolean;
+    draggingId?: string | null;
     onOpen: (featureId: string) => void;
     onArchive?: (featureId: string) => void;
     onDragStart: (e: MouseEvent, featureId: string) => void;
@@ -54,15 +56,16 @@
 </script>
 
 <div
-  class="board-column"
+  class="board-column glass-panel"
   class:board-column--drag-over={dragOver}
+  class:board-column--drop-target={dragOver}
   data-column-status={status}
 >
-  <div class="board-column-header">
+  <div class="board-column-header board-column__header">
     <div class="board-column-header-left">
       <span class="board-column-dot" style="background: {color};"></span>
-      <span class="board-column-label" style="color: {color};">{label}</span>
-      <span class="board-column-count">{features.length}</span>
+      <span class="board-column-label board-column__title" style="color: {color};">{label}</span>
+      <span class="board-column-count aurora-pill aurora-pill--muted aurora-pill--sm aurora-pill--no-dot">{features.length}</span>
     </div>
     <button class="board-column-collapse" onclick={toggleCollapse}>
       {collapsed ? '›' : '⌄'}
@@ -70,13 +73,14 @@
   </div>
 
   {#if !collapsed}
-    <div class="board-column-cards">
+    <div class="board-column-cards board-column__body">
       {#each features as feature (feature.id)}
         <BoardCard
           {feature}
           columnStatus={status}
           stale={isStale(feature)}
           staleDays={staleDays(feature)}
+          isDragging={draggingId === feature.id}
           {onOpen}
           onArchive={status === "done" ? onArchive : undefined}
           {onDragStart}

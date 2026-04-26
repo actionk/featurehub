@@ -4,8 +4,9 @@
   import { getTags } from "../../api/tags";
   import { getAllActiveSessionCounts } from "../../stores/sessionActivity.svelte";
   import { subscribe } from "../../stores/events.svelte";
-  import { switchToFeature } from "../../stores/workspaceTabs.svelte";
   import BoardColumn from "./BoardColumn.svelte";
+
+  let { onOpenFeature }: { onOpenFeature: (featureId: string) => void } = $props();
 
   const COLUMNS = [
     { status: "todo", label: "Todo", color: "var(--text-muted)" },
@@ -160,7 +161,7 @@
 
   function handleOpen(featureId: string) {
     if (justDropped) return;
-    switchToFeature(featureId);
+    onOpenFeature(featureId);
   }
 
   async function handleArchive(featureId: string) {
@@ -290,6 +291,7 @@
         color={col.color}
         features={columnFeatures(col.status)}
         dragOver={dropTargetColumn === col.status && draggingId !== null}
+        draggingId={draggingId}
         onOpen={handleOpen}
         onArchive={handleArchive}
         onDragStart={handleDragStart}

@@ -183,7 +183,7 @@
     <div class="storage-dropdown">
       {#each storages as s, i (s.id)}
         <button
-          class="storage-dropdown-item {s.is_active ? 'storage-dropdown-item--active' : ''}"
+          class="storage-dropdown-item glass-panel glass-panel--hover storage-row {s.is_active ? 'storage-dropdown-item--active list-row--active' : ''}"
           onclick={(e) => handleSwitch(e, s.id)}
           title={s.path}
         >
@@ -199,7 +199,7 @@
           {#if renamingId === s.id}
             <!-- svelte-ignore a11y_autofocus -->
             <input
-              class="storage-rename-input"
+              class="storage-rename-input input"
               type="text"
               bind:value={renameValue}
               autofocus
@@ -212,8 +212,8 @@
             />
           {:else}
             <span class="storage-dropdown-label">
-              <span class="storage-dropdown-name">{s.name}</span>
-              <span class="storage-dropdown-path">{s.path}</span>
+              <span class="storage-dropdown-name storage-row__name">{s.name}</span>
+              <span class="storage-dropdown-path storage-row__path">{s.path}</span>
             </span>
           {/if}
           {#if i < 9}

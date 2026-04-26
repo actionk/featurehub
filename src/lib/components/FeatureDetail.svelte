@@ -7,14 +7,12 @@
     getFeatureData,
     updateFeature,
     deleteFeature,
-    cleanupFeatureRepos,
     createTag,
     toggleTag,
     getSessions,
   } from "../api/tauri";
   import { getFilesDirectory } from "../api/files";
   import Modal from "./ui/Modal.svelte";
-  import StatusBadge from "./StatusBadge.svelte";
   import TagBadge from "./TagBadge.svelte";
   import { getShowTabEmojis } from "../stores/settings.svelte";
   import { subscribe } from "../stores/events.svelte";
@@ -69,12 +67,10 @@
   let titleInput = $state("");
   let descriptionModalOpen = $state(false);
   let descriptionInput = $state("");
-  let showStatusDropdown = $state(false);
   let showTagPicker = $state(false);
   let newTagName = $state("");
   let tagInputEl: HTMLInputElement | undefined = $state();
   let showDeleteConfirm = $state(false);
-  let showDoneConfirm = $state(false);
   let copiedId = $state(false);
   let copiedPath = $state(false);
 
@@ -122,13 +118,6 @@
     localStorage.setItem(`featurehub:tab:${featureId}`, activeTab);
   });
 
-  const statuses = [
-    { value: "todo", label: "Todo" },
-    { value: "in_progress", label: "In Progress" },
-    { value: "in_review", label: "In Review" },
-    { value: "done", label: "Done" },
-  ];
-
   // React to featureId changes (no more {#key} destroy/recreate)
   // Must run BEFORE the initialTab effect so that initialTab can override the persisted tab
   $effect(() => {
@@ -136,10 +125,8 @@
     // Reset UI state
     editingTitle = false;
     descriptionModalOpen = false;
-    showStatusDropdown = false;
     showTagPicker = false;
     showDeleteConfirm = false;
-    showDoneConfirm = false;
     copiedId = false;
     copiedPath = false;
     // Restore persisted tab
@@ -256,27 +243,6 @@
     if (e.key === "Escape") editingTitle = false;
   }
 
-  async function setStatus(s: string) {
-    if (!feature) return;
-    showStatusDropdown = false;
-    if (s === "done") {
-      showDoneConfirm = true;
-      return;
-    }
-    await updateFeature(feature.id, { status: s });
-    await refresh();
-  }
-
-  async function confirmDone(cleanupRepos: boolean) {
-    if (!feature) return;
-    showDoneConfirm = false;
-    if (cleanupRepos) {
-      await cleanupFeatureRepos(feature.id).catch(() => {});
-    }
-    await updateFeature(feature.id, { status: "done" });
-    onDeleted?.();
-  }
-
   function startEditDescription() {
     if (!feature) return;
     descriptionInput = feature.description ?? "";
@@ -339,16 +305,12 @@
   );
 
   $effect(() => {
-    if (showStatusDropdown || showTagPicker) {
-      // Track the opening frame to skip the initial click event
+    if (showTagPicker) {
       let skipFirst = true;
       function handleClick(e: MouseEvent) {
         if (skipFirst) { skipFirst = false; return; }
         const target = e.target as HTMLElement;
-        if (showStatusDropdown && !target.closest(".status-dropdown-wrapper")) {
-          showStatusDropdown = false;
-        }
-        if (showTagPicker && !target.closest(".tag-picker-wrapper")) {
+        if (!target.closest(".tag-picker-wrapper")) {
           showTagPicker = false;
         }
       }
@@ -459,24 +421,8 @@
       </div>
     </div>
 
-    <!-- Row 2: status + tags + time + desc -->
+    <!-- Row 2: tags + time + desc -->
       <div class="detail-row2">
-        <div class="status-dropdown-wrapper" style="position: relative; flex-shrink: 0;">
-          <button class="status-trigger"
-            onclick={() => (showStatusDropdown = !showStatusDropdown)}>
-            <StatusBadge status={feature.status} />
-          </button>
-          {#if showStatusDropdown}
-            <div class="dropdown" style="left: 0;">
-              {#each statuses as s}
-                <button class="dropdown-item" onclick={() => setStatus(s.value)}>
-                  <StatusBadge status={s.value} />
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </div>
-
         {#each featureTags as tag (tag.id)}
           <TagBadge {tag} removable onRemove={handleRemoveTag} />
         {/each}
@@ -525,11 +471,11 @@
   <div class="tab-bar">
     <div class="tab-bar-tabs">
       {#each tabs as tab (tab.id)}
-        <button class="tab-btn {activeTab === tab.id ? 'tab-btn--active' : ''}" onclick={() => { switchTab(tab.id); }}
+        <button class="tab-btn tab {activeTab === tab.id ? 'tab-btn--active tab--active' : ''}" onclick={() => { switchTab(tab.id); }}
           title="{tab.label} ({tab.shortcutKey})">
           {showEmojis ? `${tab.emoji} ${tab.label}` : tab.label}
           {#each tab.getBadges(tabContext) as badge}
-            <span class="tab-count {badge.style === 'active' ? 'tab-count--active' : ''}"
+            <span class="tab-count tab__badge {badge.style === 'active' ? 'tab-count--active' : ''}"
               style="{badge.style === 'warning' ? 'background: var(--amber); color: #000;' : ''}"
               title={badge.title ?? ''}>{badge.text}</span>
           {/each}
@@ -611,30 +557,3 @@
   </div>
 {/if}
 
-{#if showDoneConfirm && feature}
-  {@const clonedRepos = (feature.directories ?? []).filter((d) => d.repo_url)}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="modal-backdrop" onclick={(e) => { if (e.target === e.currentTarget) showDoneConfirm = false; }} onkeydown={(e) => { if (e.key === 'Escape') showDoneConfirm = false; }}>
-    <div class="modal-content" style="width: 420px;">
-      <h2 class="modal-title">Mark as Done</h2>
-      <p class="modal-body-text">
-        Mark <strong style="color: var(--text-primary);">{feature.title}</strong> as done? It will be archived and moved to the Done list.
-      </p>
-      {#if clonedRepos.length > 0}
-        <p class="modal-hint-text">
-          This feature has {clonedRepos.length} cloned repositor{clonedRepos.length === 1 ? "y" : "ies"} on disk that can be cleaned up.
-        </p>
-        <div class="modal-actions">
-          <button class="btn-subtle" style="padding: 7px 16px;" onclick={() => (showDoneConfirm = false)}>Cancel</button>
-          <button class="btn-subtle" style="padding: 7px 16px;" onclick={() => confirmDone(false)}>Keep Repos</button>
-          <button class="btn-accent" style="padding: 7px 18px;" onclick={() => confirmDone(true)}>Done + Clean Up</button>
-        </div>
-      {:else}
-        <div class="modal-actions">
-          <button class="btn-subtle" style="padding: 7px 16px;" onclick={() => (showDoneConfirm = false)}>Cancel</button>
-          <button class="btn-accent" style="padding: 7px 18px;" onclick={() => confirmDone(false)}>Mark Done</button>
-        </div>
-      {/if}
-    </div>
-  </div>
-{/if}

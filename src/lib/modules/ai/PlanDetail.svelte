@@ -17,10 +17,10 @@
   let feedbackText = $state("");
   let resolving = $state(false);
 
-  function statusColor(status: string): string {
-    if (status === "approved") return "var(--green)";
-    if (status === "rejected") return "var(--red)";
-    return "var(--amber)";
+  function statusVariant(status: string): string {
+    if (status === "approved") return "aurora-pill--success";
+    if (status === "rejected") return "aurora-pill--danger";
+    return "aurora-pill--warn";
   }
 
   function statusLabel(status: string): string {
@@ -63,13 +63,13 @@
   }
 </script>
 
-<div class="plan-detail">
+<div class="plan-detail glass-panel">
   <div class="plan-detail-header">
-    <button class="btn-ghost" onclick={onClose} title="Back">
+    <button class="btn btn--ghost btn--icon btn--sm" onclick={onClose} title="Back">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M10.3 2.3L4.6 8l5.7 5.7 1.4-1.4L7.4 8l4.3-4.3z"/></svg>
     </button>
     <h2 class="plan-detail-title">{plan.title}</h2>
-    <span class="plan-detail-status" style="background: {statusColor(plan.status)}20; color: {statusColor(plan.status)}; border: 1px solid {statusColor(plan.status)}40;">
+    <span class="plan-detail-status aurora-pill {statusVariant(plan.status)}">
       {statusLabel(plan.status)}
     </span>
   </div>
@@ -99,14 +99,14 @@
       ></textarea>
     </div>
     <div class="plan-detail-actions">
-      <button class="btn-ghost" style="color: var(--text-muted);" onclick={handleDelete} title="Delete plan">
+      <button class="btn btn--ghost btn--icon btn--sm" style="color: var(--text-muted);" onclick={handleDelete} title="Delete plan">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M5 2V1h6v1h4v1H1V2h4zm1 3v8h1V5H6zm3 0v8h1V5H9zM2 4l1 11h10l1-11H2z"/></svg>
       </button>
       <div style="flex: 1;"></div>
-      <button class="btn-new plan-btn-reject" onclick={handleReject} disabled={resolving}>
+      <button class="btn plan-btn-reject" onclick={handleReject} disabled={resolving}>
         Reject
       </button>
-      <button class="btn-new plan-btn-approve" onclick={handleApprove} disabled={resolving}>
+      <button class="btn btn--primary plan-btn-approve" onclick={handleApprove} disabled={resolving}>
         Approve
       </button>
     </div>

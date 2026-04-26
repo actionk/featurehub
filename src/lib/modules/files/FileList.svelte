@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { FileEntry, Folder } from "../../api/tauri";
   import { deleteFile, openFile, revealFile, getFilePath, renameFile, deleteFolder, renameFolder } from "../../api/tauri";
-  import { formatFileSize } from "../../utils/format";
+  import { formatFileSize, fileTypeColor } from "../../utils/format";
 
   let {
     files,
@@ -347,7 +347,7 @@
   {/if}
 
   {#if files.length === 0 && folders.length === 0}
-    <div class="drop-zone {dragOver ? 'drop-zone--active' : ''}"
+    <div class="drop-zone file-browser__drop-zone {dragOver ? 'drop-zone--active file-browser__drop-zone--active' : ''}"
       ondragover={(e) => { e.preventDefault(); }}
       ondrop={handleDrop}
       onclick={onAddFiles}
@@ -360,7 +360,7 @@
       Drop files here or click to add
     </div>
   {:else}
-    <div class="drop-zone drop-zone--compact {dragOver ? 'drop-zone--active' : ''}"
+    <div class="drop-zone drop-zone--compact file-browser__drop-zone {dragOver ? 'drop-zone--active file-browser__drop-zone--active' : ''}"
       ondragover={(e) => { e.preventDefault(); }}
       ondrop={handleDrop}
       onclick={onAddFiles}
@@ -460,8 +460,10 @@
     {/snippet}
 
     {#snippet fileRow(file: FileEntry, depth: number)}
+      {@const ext = file.filename.split('.').pop() ?? ''}
+      {@const typeColor = fileTypeColor(ext)}
       <div
-        class="tree-row tree-row--file {selectedFileId === file.id ? 'tree-row--selected' : ''} {draggingFileId === file.id ? 'tree-row--dragging' : ''}"
+        class="tree-row tree-row--file file-row list-row {selectedFileId === file.id ? 'tree-row--selected list-row--active' : ''} {draggingFileId === file.id ? 'tree-row--dragging' : ''}"
         style="--depth: {depth};"
         onmousedown={(e) => handleFileMouseDown(e, file)}
         onclick={() => { if (!draggingFileId) onSelectFile(file); }}
@@ -477,6 +479,7 @@
         <span class="tree-chevron tree-chevron--hidden">
           <svg width="10" height="10" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5z"/></svg>
         </span>
+        <span class="file-row__type-dot" style="background: {typeColor}; color: {typeColor};"></span>
         <svg class="tree-icon" width="14" height="14" viewBox="0 0 16 16" fill="var(--text-muted)">
           <path d="M4 1a1 1 0 00-1 1v12a1 1 0 001 1h8a1 1 0 001-1V5l-4-4H4zm5 0v4h4"/>
         </svg>
@@ -493,8 +496,8 @@
             />
           </div>
         {:else}
-          <span class="tree-name tree-name--file">{file.filename}</span>
-          <span class="tree-size">{formatFileSize(file.size)}</span>
+          <span class="tree-name tree-name--file file-row__name">{file.filename}</span>
+          <span class="tree-size file-row__size">{formatFileSize(file.size)}</span>
         {/if}
         {#if hoveredFileId === file.id && !draggingFileId && renamingFileId !== file.id}
           <button class="btn-ghost" style="flex-shrink: 0;"

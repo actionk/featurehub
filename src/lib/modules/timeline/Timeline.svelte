@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { TimelineEvent } from "../../api/tauri";
   import { getTimeline } from "../../api/tauri";
-  import { formatRelativeTime, formatDate } from "../../utils/format";
+  import { formatRelativeTime, formatDate, eventColor } from "../../utils/format";
   import type { TabContext } from "../registry";
 
   let { featureId }: TabContext = $props();
@@ -88,7 +88,7 @@
 {:else if events.length === 0}
   <div style="font-size: 12px; color: var(--text-muted); padding: 20px 0; text-align: center;">No activity yet</div>
 {:else}
-  <div class="tl">
+  <div class="tl timeline">
     {#each grouped as group, gi}
       <div class="tl-day" class:tl-day--first={gi === 0}>
         <div class="tl-day-header">
@@ -98,13 +98,14 @@
         </div>
         {#each group.events as event}
           {@const meta = getMeta(event.event_type)}
-          <div class="tl-row">
-            <span class="tl-time">{formatTime(event.timestamp)}</span>
-            <span class="tl-dot" style="background: {meta.color};"></span>
+          {@const evColor = eventColor(event.event_type)}
+          <div class="tl-row timeline__event glass-panel--soft">
+            <span class="tl-time timeline__meta">{formatTime(event.timestamp)}</span>
+            <span class="tl-dot timeline__dot live-dot live-dot--static" style="background: {evColor}; color: {evColor};"></span>
             <span class="tl-verb" style="color: {meta.color};">{meta.verb}</span>
-            <span class="tl-title">{event.title}</span>
+            <span class="tl-title timeline__title">{event.title}</span>
             {#if event.detail && event.event_type !== "note_updated" && event.detail !== event.title}
-              <span class="tl-detail">{event.detail}</span>
+              <span class="tl-detail timeline__meta">{event.detail}</span>
             {/if}
           </div>
         {/each}

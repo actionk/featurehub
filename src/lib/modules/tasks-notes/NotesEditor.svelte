@@ -83,11 +83,11 @@
   );
 </script>
 
-<div class="notes-container">
-  <div class="notes-toolbar">
+<div class="notes-container notes-editor">
+  <div class="notes-toolbar notes-editor__toolbar">
     {#each [["edit", "Edit"], ["split", "Split"], ["preview", "Preview"]] as [m, label]}
       <button
-        class="notes-toolbar-btn {mode === m ? 'notes-toolbar-btn--active' : ''}"
+        class="notes-toolbar-btn btn btn--sm {mode === m ? 'notes-toolbar-btn--active' : ''}"
         onclick={() => (mode = m as ViewMode)}
       >
         {label}
@@ -102,7 +102,7 @@
     <div class="notes-editor">
       {#if mode === "edit" || mode === "split"}
         <textarea
-          class="notes-textarea"
+          class="notes-textarea input notes-editor__textarea"
           bind:value={content}
           oninput={handleInput}
           onblur={handleBlur}

@@ -102,13 +102,13 @@
 {#snippet manualTaskRow(task: Task)}
   {@const isDone = task.done}
   <div
-    class="task-item"
+    class="task-item task-row{isDone ? ' task-row--done' : ''}"
     role="group"
     onmouseenter={() => (hoveredId = task.id)}
     onmouseleave={() => (hoveredId = null)}
   >
     <button
-      class="task-checkbox{isDone ? ' task-checkbox--done' : ''}"
+      class="task-checkbox check{isDone ? ' task-checkbox--done check--done' : ''}"
       onclick={() => handleToggle(task)}
       aria-label={isDone ? "Mark as not done" : "Mark as done"}
     >
@@ -128,7 +128,7 @@
       />
     {:else}
       <span
-        class="task-title{isDone ? ' task-title--done' : ''}"
+        class="task-title task-row__title{isDone ? ' task-title--done' : ''}"
         role="button"
         tabindex="0"
         ondblclick={() => startEdit(task)}
@@ -139,7 +139,7 @@
     {/if}
 
     {#if hoveredId === task.id && editingId !== task.id}
-      <button class="btn-ghost" style="color: var(--red); flex-shrink: 0;"
+      <button class="btn-ghost btn btn--icon btn--ghost btn--sm" style="color: var(--red); flex-shrink: 0;"
         onclick={() => handleDelete(task.id)} aria-label="Delete task">
         <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 3.1L8 6.6l3.5-3.5 1.4 1.4L9.4 8l3.5 3.5-1.4 1.4L8 9.4l-3.5 3.5-1.4-1.4L6.6 8 3.1 4.5z"/></svg>
       </button>
@@ -237,11 +237,11 @@
                       href={task.external_url}
                       target="_blank"
                       rel="noopener"
-                      class="jira-task-key"
+                      class="jira-task-key aurora-pill aurora-pill--info aurora-pill--sm aurora-pill--no-dot"
                       title="Open in Jira"
                     >{task.external_key}</a>
                   {:else}
-                    <span class="jira-task-key">{task.external_key}</span>
+                    <span class="jira-task-key aurora-pill aurora-pill--info aurora-pill--sm aurora-pill--no-dot">{task.external_key}</span>
                   {/if}
                 {/if}
                 <span class="jira-task-title" title={task.title}>{task.title}</span>

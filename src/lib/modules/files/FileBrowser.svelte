@@ -236,8 +236,8 @@
 {#if loading}
   <div style="text-align: center; padding: 16px; font-size: 12px; color: var(--text-muted);">Loading files...</div>
 {:else}
-  <div class="file-browser" class:file-browser--resizing={isResizing} bind:this={browserEl}>
-    <div class="file-browser__list">
+  <div class="file-browser" class:file-browser--resizing={isResizing} class:file-browser__drop-zone--active={dragOver} bind:this={browserEl}>
+    <div class="file-browser__list glass-panel">
       <FileList
         {files}
         {folders}
@@ -260,7 +260,7 @@
     {#if selectedFile}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="file-browser__divider" onmousedown={onResizeStart}></div>
-      <div class="file-browser__preview" style="width: {previewWidth}px;">
+      <div class="file-browser__preview glass-panel" style="width: {previewWidth}px;">
         <FilePreviewPanel file={selectedFile} onClose={handleClosePreview} onFileSaved={loadData} />
       </div>
     {/if}

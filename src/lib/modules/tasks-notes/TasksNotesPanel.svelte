@@ -43,11 +43,11 @@
   onDestroy(() => clearToolbarActions("notes"));
 </script>
 
-<div class="tn-panel" bind:this={panelEl}>
-  <div class="tn-tasks">
+<div class="tn-panel tasks-notes-panel" bind:this={panelEl}>
+  <div class="tn-tasks glass-panel tasks-column">
     <TaskList {featureId} {tasks} {onTasksChanged} />
   </div>
-  <div class="tn-notes">
+  <div class="tn-notes glass-panel notes-column">
     <NotesEditor {featureId} {note} {onNoteChanged} />
   </div>
 </div>

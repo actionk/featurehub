@@ -1,0 +1,26 @@
+{
+  "planPath": "docs/superpowers/plans/2026-04-23-feature-list-redesign-v3-implementation.md",
+  "tasks": [
+    {
+      "id": 21,
+      "subject": "Task 1: Add .feature-unit CSS primitive system",
+      "status": "completed",
+      "description": "Appended .feature-unit / .unit-head / .sub-list / .sub-session CSS + state modifiers to src/app.css. Commit 6398a4c."
+    },
+    {
+      "id": 22,
+      "subject": "Task 2: Restructure Sidebar markup to use .feature-unit",
+      "status": "completed",
+      "blockedBy": [21],
+      "description": "Replaced per-feature render block in Sidebar.svelte with .feature-unit card containing unit-head + optional sub-list. Commit 0aecddb."
+    },
+    {
+      "id": 23,
+      "subject": "Task 3: Remove legacy feature-item + feature-session CSS",
+      "status": "completed",
+      "blockedBy": [22],
+      "description": "Deleted legacy .feature-item / .feature-session-item CSS. 7634→7247 lines. Preserved wrapper drag classes + pulse-amber keyframes. Commit 4d1d699."
+    }
+  ],
+  "lastUpdated": "2026-04-23T23:50:00Z"
+}

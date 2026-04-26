@@ -145,7 +145,7 @@
   }
 </script>
 
-<div class="preview-panel">
+<div class="preview-panel file-preview">
   <div class="preview-header">
     <div class="preview-header__info">
       <div class="preview-header__filename">{file.filename}</div>
@@ -249,7 +249,7 @@
           </div>
         {/if}
       {:else}
-        <div class="preview-binary">
+        <div class="preview-binary glass-panel--soft file-preview__binary">
           <svg width="32" height="32" viewBox="0 0 16 16" fill="var(--text-muted)"><path d="M4 1a1 1 0 00-1 1v12a1 1 0 001 1h8a1 1 0 001-1V5l-4-4H4zm5 0v4h4"/></svg>
           <div>Cannot preview this file type</div>
           <button class="btn-accent" onclick={handleOpenExternal}>Open externally</button>

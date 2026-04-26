@@ -64,13 +64,13 @@
       {#each allSkills as skill (skill.id)}
         {@const enabled = isSkillEnabled(skill)}
         <button
-          class="skill-block"
+          class="skill-block glass-panel--soft skill-row"
           class:skill-block--on={enabled}
           onclick={() => toggleSkill(skill)}
           title={skill.name}
         >
-          <span class="skill-dot" class:skill-dot--on={enabled}></span>
-          <span class="skill-name">{skill.name}</span>
+          <span class="skill-dot check" class:skill-dot--on={enabled} class:check--done={enabled}></span>
+          <span class="skill-name skill-row__name">{skill.name}</span>
         </button>
       {/each}
     </div>

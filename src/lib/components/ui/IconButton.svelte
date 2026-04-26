@@ -31,7 +31,7 @@
 </script>
 
 <button
-  class="icon-btn {sizeClass[size]} {variantClass[variant]}"
+  class="icon-btn btn btn--icon {variant === 'ghost' ? 'btn--ghost' : ''} {size === 'sm' || size === 'xs' ? 'btn--sm' : ''} {sizeClass[size]} {variantClass[variant]}"
   {onclick}
   {title}
   {disabled}

@@ -32,27 +32,30 @@
 </script>
 
 {#if !loading && installedExtensions.length > 0}
-  <div class="settings-section">
+  <div class="settings-section extensions-panel">
     <div class="settings-section-title">Installed Extensions</div>
     {#each installedExtensions as ext}
-      <div class="extension-card" class:extension-card--enabled={ext.enabled}>
-        <div class="extension-card__header">
+      <div class="extension-card glass-panel glass-panel--hover extension-row" class:extension-card--enabled={ext.enabled}>
+        <div class="extension-card__header extension-row__head">
           <div class="extension-card__info">
-            <span class="extension-card__name">{ext.manifest.name}</span>
-            <span class="extension-card__badge" style="background: var(--bg3); color: var(--fg2); font-size: 10px; padding: 2px 6px; border-radius: 4px;">v{ext.manifest.version}</span>
+            <span class="extension-card__name extension-row__name">{ext.manifest.name}</span>
+            <span class="aurora-pill aurora-pill--muted aurora-pill--sm aurora-pill--no-dot">v{ext.manifest.version}</span>
             <span class="extension-card__badge">Installed</span>
           </div>
-          <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg2);">
-            <input
-              type="checkbox"
-              checked={ext.enabled}
-              onchange={(e) => toggleEnabled(ext.manifest.id, e.currentTarget.checked)}
-            />
+          <label class="extension-row__actions" style="font-size: 12px; color: var(--fg2);">
+            <button
+              type="button"
+              class="toggle"
+              class:toggle--on={ext.enabled}
+              aria-pressed={ext.enabled}
+              aria-label="Toggle extension enabled"
+              onclick={() => toggleEnabled(ext.manifest.id, !ext.enabled)}
+            ></button>
             Enabled
           </label>
         </div>
         {#if ext.manifest.description}
-          <div class="extension-card__desc">{ext.manifest.description}</div>
+          <div class="extension-card__desc extension-row__desc">{ext.manifest.description}</div>
         {/if}
         {#if ext.requires_status.length > 0}
           <div class="extension-card__body">

@@ -294,18 +294,18 @@
       {/if}
 
       <div class="modal-actions" style="margin-top: 20px;">
-        <button class="btn-subtle" style="padding: 7px 16px;" onclick={onClose}>Cancel</button>
+        <button class="btn btn-subtle" style="padding: 7px 16px;" onclick={onClose}>Cancel</button>
         {#if mode === "export"}
-          <button class="btn-new" style="width: auto; padding: 7px 18px;" onclick={handleStart}>
+          <button class="btn btn--primary btn-new" style="width: auto; padding: 7px 18px;" onclick={handleStart}>
             Export
           </button>
         {:else if !checkResult}
-          <button class="btn-new" style="width: auto; padding: 7px 18px;" onclick={handleStart}>
+          <button class="btn btn--primary btn-new" style="width: auto; padding: 7px 18px;" onclick={handleStart}>
             Choose File…
           </button>
         {:else}
           <button
-            class="btn-new"
+            class="btn btn--primary btn-new"
             style="width: auto; padding: 7px 18px;"
             onclick={() => handleImport(checkResult!.zip_path, duplicateStrategy)}
           >
@@ -321,7 +321,7 @@
         <p class="ei-progress-stage">{stage}</p>
         {#if mode === "export"}
           <div class="modal-actions" style="margin-top: 12px;">
-            <button class="btn-subtle" style="padding: 5px 14px;" onclick={() => cancelExport()}>Cancel</button>
+            <button class="btn btn-subtle" style="padding: 5px 14px;" onclick={() => cancelExport()}>Cancel</button>
           </div>
         {/if}
       </div>
@@ -330,7 +330,7 @@
         <p>{error}</p>
       </div>
       <div class="modal-actions" style="margin-top: 16px;">
-        <button class="btn-subtle" style="padding: 7px 16px;" onclick={onClose}>Close</button>
+        <button class="btn btn-subtle" style="padding: 7px 16px;" onclick={onClose}>Close</button>
       </div>
     {:else if done}
       {#if mode === "export" && resultPath}
@@ -362,7 +362,7 @@
                     {/if}
                   </div>
                   <button
-                    class="btn-accent"
+                    class="btn btn-accent"
                     disabled={restoringRepo === repo.directory_id}
                     onclick={() => handleRestoreRepo(repo)}
                   >
@@ -376,7 +376,7 @@
       {/if}
 
       <div class="modal-actions" style="margin-top: 20px;">
-        <button class="btn-new" style="width: auto; padding: 7px 18px;" onclick={onClose}>Done</button>
+        <button class="btn btn--primary btn-new" style="width: auto; padding: 7px 18px;" onclick={onClose}>Done</button>
       </div>
     {/if}
   </div>

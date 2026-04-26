@@ -123,10 +123,12 @@
   onkeydown={handleKeydown}
 >
   <div class="search-box">
-    <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border);">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--accent)" style="flex-shrink: 0;">
-        <path d="M6.5 1a5.5 5.5 0 014.38 8.82l3.65 3.65a.75.75 0 01-1.06 1.06l-3.65-3.65A5.5 5.5 0 116.5 1zm0 1.5a4 4 0 100 8 4 4 0 000-8z"/>
-      </svg>
+    <div class="search-bar input input--search" style="padding: 14px 16px; border-bottom: 1px solid var(--border); border-radius: 0;">
+      <span class="search-bar__icon" style="flex-shrink: 0; display: inline-flex;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M6.5 1a5.5 5.5 0 014.38 8.82l3.65 3.65a.75.75 0 01-1.06 1.06l-3.65-3.65A5.5 5.5 0 116.5 1zm0 1.5a4 4 0 100 8 4 4 0 000-8z"/>
+        </svg>
+      </span>
       <input
         bind:this={inputEl}
         type="text"
@@ -135,10 +137,10 @@
         bind:value={query}
         oninput={handleInput}
       />
-      <span class="search-trigger-key">ESC</span>
+      <span class="kbd search-trigger-key">ESC</span>
     </div>
 
-    <div class="search-results">
+    <div class="search-results glass-panel">
       {#if query.trim() && displayResults.length === 0}
         <div class="search-empty-state">No results found</div>
       {:else if displayResults.length > 0}
@@ -157,7 +159,7 @@
             {@const globalIdx = displayResults.indexOf(result)}
             {@const icon = typeIcons[type] ?? typeIcons.feature}
             <button
-              class="search-result-item {globalIdx === selectedIndex ? 'search-result-item--selected' : ''}"
+              class="list-row search-result-row search-result-item {globalIdx === selectedIndex ? 'list-row--active search-result-item--selected' : ''}"
               onclick={() => selectResult(result)}
               onmouseenter={() => (selectedIndex = globalIdx)}
             >
@@ -165,16 +167,16 @@
                 {icon.label}
               </div>
               <div style="flex: 1; min-width: 0;">
-                <div class="search-result-title">
+                <div class="search-result-row__title search-result-title">
                   {result.title}
                 </div>
                 {#if result.snippet}
-                  <div class="search-result-snippet">
+                  <div class="search-result-row__snippet search-result-snippet">
                     {result.snippet}
                   </div>
                 {/if}
               </div>
-              <span class="search-result-type">{type}</span>
+              <span class="aurora-pill aurora-pill--muted aurora-pill--sm aurora-pill--no-dot search-result-type">{type}</span>
             </button>
           {/each}
         {/each}
@@ -187,13 +189,13 @@
 
     <div class="search-footer">
       <span class="search-footer-hint">
-        <kbd class="search-footer-key">↑↓</kbd> navigate
+        <kbd class="kbd search-footer-key">↑↓</kbd> navigate
       </span>
       <span class="search-footer-hint">
-        <kbd class="search-footer-key">↵</kbd> open
+        <kbd class="kbd search-footer-key">↵</kbd> open
       </span>
       <span class="search-footer-hint">
-        <kbd class="search-footer-key">Esc</kbd> close
+        <kbd class="kbd search-footer-key">Esc</kbd> close
       </span>
     </div>
   </div>
