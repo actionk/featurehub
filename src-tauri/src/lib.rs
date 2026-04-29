@@ -263,6 +263,7 @@ pub fn run() {
             commands::pty_spawn_session,
             commands::pty_resume_session,
             commands::pty_list_active,
+            commands::pty_get_scrollback,
             commands::finish_embedded_session,
             commands::cleanup_orphaned_sessions,
             commands::export_storage,

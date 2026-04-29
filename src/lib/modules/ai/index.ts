@@ -8,6 +8,7 @@ registerTab({
   emoji: "🤖",
   shortcutKey: "1",
   sortOrder: 100,
+  preload: true,
   component: AiPanel,
   panelStyle: "display: flex; flex-direction: column; gap: 0; overflow: hidden; padding: 0;",
   getBadges: (ctx: TabContext) => {

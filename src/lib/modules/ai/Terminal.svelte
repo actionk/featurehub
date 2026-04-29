@@ -50,7 +50,8 @@
         const viewportY = term!.buffer.active.viewportY;
         fitAddon.fit();
         term!.scrollToLine(viewportY);
-        if (term.cols <= 10 && attempts < 10) {
+        // Retry if dimensions are unreasonably small — container may still be settling
+        if ((term.cols <= 10 || term.rows < 8) && attempts < 10) {
           attempts++;
           requestAnimationFrame(tryFitActive);
         } else {
@@ -288,10 +289,11 @@
         return;
       }
       fitAddon.fit();
-      if ((term.rows <= 2 || term.cols <= 10) && fitAttempts < 10) {
+      // Retry if cols or rows are unreasonably small — container may still be settling
+      if ((term.rows < 8 || term.cols <= 10) && fitAttempts < 15) {
         fitAttempts++;
         setTimeout(tryFit, 50);
-      } else if (term.rows > 2) {
+      } else if (term.rows >= 8) {
         ptyResize(terminalId, term.cols, term.rows).catch(() => {});
       }
     }
@@ -307,7 +309,15 @@
         const utf8Text = new TextDecoder().decode(bytes);
         processRawData(utf8Text);
       }
-    }).then((fn) => (unlistenData = fn));
+    }).then((fn) => {
+      unlistenData = fn;
+      // Trigger a resize once the listener is registered so any PTY output that
+      // arrived before we started listening causes Claude to redraw its UI.
+      // This fixes the race where the initial screen render is missed.
+      if (fitAddon && term && term.rows >= 8) {
+        ptyResize(terminalId, term.cols, term.rows).catch(() => {});
+      }
+    });
 
     // Listen for PTY exit
     listen(`pty-exit-${terminalId}`, () => {
@@ -378,6 +388,10 @@
         if (fitAddon && term && containerEl && containerEl.offsetWidth > 10) {
           fitAddon.fit();
           ptyResize(terminalId, term.cols, term.rows).catch(() => {});
+          // Force repaint — canvas renderer goes blank after display:none → display:block
+          // (e.g. switching away from and back to the AI tab). fit() only redraws if
+          // cols/rows changed; if dimensions are unchanged, we need an explicit refresh.
+          try { term.refresh(0, term.rows - 1); } catch {}
         }
       });
     });

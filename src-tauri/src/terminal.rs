@@ -1,10 +1,14 @@
 use std::collections::HashMap;
 use std::io::{Read, Write};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use portable_pty::{native_pty_system, CommandBuilder, PtySize};
 use tauri::{AppHandle, Emitter};
+
+// Rolling PTY output buffer: keeps the last N bytes so the frontend can
+// replay them into a fresh xterm instance when remounting after a feature switch.
+const SCROLLBACK_MAX: usize = 256 * 1024; // 256 KB
 
 pub struct TerminalInstance {
     writer: Box<dyn Write + Send>,
@@ -13,6 +17,7 @@ pub struct TerminalInstance {
     pub feature_id: String,
     pub session_db_id: Option<String>,
     pub label: Option<String>,
+    pub scrollback: Arc<Mutex<Vec<u8>>>,
 }
 
 #[derive(serde::Serialize)]
@@ -109,6 +114,7 @@ pub fn spawn_pty(
         .map_err(|e| format!("Failed to get PTY reader: {}", e))?;
 
     let id = uuid::Uuid::new_v4().to_string();
+    let scrollback = Arc::new(Mutex::new(Vec::<u8>::new()));
 
     let instance = TerminalInstance {
         writer,
@@ -117,6 +123,7 @@ pub fn spawn_pty(
         feature_id: feature_id.to_string(),
         session_db_id: None,
         label: None,
+        scrollback: Arc::clone(&scrollback),
     };
 
     {
@@ -136,6 +143,14 @@ pub fn spawn_pty(
                     break;
                 }
                 Ok(n) => {
+                    // Append to rolling scrollback buffer
+                    if let Ok(mut sb) = scrollback.lock() {
+                        sb.extend_from_slice(&buf[..n]);
+                        if sb.len() > SCROLLBACK_MAX {
+                            let excess = sb.len() - SCROLLBACK_MAX;
+                            sb.drain(..excess);
+                        }
+                    }
                     let encoded = BASE64.encode(&buf[..n]);
                     let _ = app_handle.emit(&format!("pty-data-{}", terminal_id), encoded);
                 }
@@ -215,6 +230,17 @@ pub fn kill_all(state: &TerminalState) -> Result<(), String> {
         let _ = instance.child.kill();
     }
     Ok(())
+}
+
+/// Returns the rolling PTY output buffer as base64.
+/// The frontend replays this into a fresh xterm instance when remounting.
+pub fn get_scrollback(state: &TerminalState, id: &str) -> Result<String, String> {
+    let terminals = state.terminals.lock().map_err(|e| e.to_string())?;
+    let instance = terminals
+        .get(id)
+        .ok_or_else(|| format!("Terminal {} not found", id))?;
+    let sb = instance.scrollback.lock().map_err(|e| e.to_string())?;
+    Ok(BASE64.encode(&*sb))
 }
 
 pub fn set_session_metadata(

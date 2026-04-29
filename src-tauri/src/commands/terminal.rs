@@ -268,6 +268,14 @@ pub fn finish_embedded_session(
 }
 
 #[tauri::command]
+pub fn pty_get_scrollback(
+    terminal_state: State<'_, TerminalState>,
+    id: String,
+) -> Result<String, String> {
+    crate::terminal::get_scrollback(&terminal_state, &id)
+}
+
+#[tauri::command]
 pub fn pty_list_active(
     terminal_state: State<'_, TerminalState>,
 ) -> Result<Vec<crate::terminal::ActiveTerminalInfo>, String> {

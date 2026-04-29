@@ -686,7 +686,9 @@
   }
 
   async function handleTerminalExited(terminalId: string) {
-    const term = featureTerminals.find(t => t.terminalId === terminalId);
+    // Use global store — terminal may belong to another feature if it exited while
+    // the user was viewing a different feature (terminals are kept alive globally).
+    const term = getActiveTerminals().find(t => t.terminalId === terminalId);
     markExited(terminalId);
     if (term) {
       await finishEmbeddedSession(term.sessionDbId).catch(() => {});
@@ -788,9 +790,12 @@
   </div>
 
   <!-- Terminal instances + optional side plan -->
+  <!-- All active terminals (across all features) are rendered here so xterm
+       instances survive feature switches. Non-current terminals are kept hidden
+       with visibility:hidden; only the active tab terminal is shown. -->
   <div style="flex: 1; min-height: 0; position: relative; display: flex;">
     <div style="flex: {sidePlan ? '0 0 40%' : '1 1 100%'}; min-width: 0; position: relative; transition: flex 0.15s ease;">
-      {#each featureTerminals as term (term.terminalId)}
+      {#each getActiveTerminals() as term (term.terminalId)}
         <div
           class="terminal-wrapper"
           style="visibility: {activeTerminalId === term.terminalId ? 'visible' : 'hidden'}; position: absolute; inset: 0;"

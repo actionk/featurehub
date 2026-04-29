@@ -80,6 +80,11 @@ export async function ptyListActive(): Promise<ActiveTerminalInfo[]> {
   return invoke<ActiveTerminalInfo[]>("pty_list_active");
 }
 
+/** Returns the rolling PTY output buffer as a base64 string (up to 256 KB). */
+export async function ptyGetScrollback(id: string): Promise<string> {
+  return invoke<string>("pty_get_scrollback", { id });
+}
+
 export async function finishEmbeddedSession(sessionDbId: string): Promise<void> {
   return invoke<void>("finish_embedded_session", { sessionDbId });
 }
