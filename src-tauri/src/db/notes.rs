@@ -19,15 +19,14 @@ pub fn get_note(conn: &Connection, feature_id: &str) -> Result<Option<Note>, Str
         )
         .map_err(|e| e.to_string())?;
 
-    let result = stmt
-        .query_row(params![feature_id], |row| {
-            Ok(Note {
-                id: row.get(0)?,
-                feature_id: row.get(1)?,
-                content: row.get(2)?,
-                updated_at: row.get(3)?,
-            })
-        });
+    let result = stmt.query_row(params![feature_id], |row| {
+        Ok(Note {
+            id: row.get(0)?,
+            feature_id: row.get(1)?,
+            content: row.get(2)?,
+            updated_at: row.get(3)?,
+        })
+    });
 
     match result {
         Ok(note) => Ok(Some(note)),
@@ -66,8 +65,8 @@ pub fn save_note(conn: &Connection, feature_id: &str, content: &str) -> Result<N
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::test_utils::test_db;
     use crate::db::features::create_feature;
+    use crate::db::test_utils::test_db;
 
     fn setup() -> (rusqlite::Connection, String) {
         let conn = test_db();

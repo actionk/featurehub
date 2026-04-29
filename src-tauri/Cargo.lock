@@ -479,6 +479,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
+name = "claude-code-transcripts"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "738c43eb2f4e5cffb85d20cd585fca46e7b316a3db7b78eccf2f1ddac69c01ea"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1065,6 +1076,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "clap",
+ "claude-code-transcripts",
  "dirs 5.0.1",
  "glob",
  "inquire",

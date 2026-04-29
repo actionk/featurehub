@@ -231,8 +231,17 @@ mod tests {
             "INSERT INTO features (id, title, status, sort_order, created_at, updated_at)
              VALUES ('f1', 'Test', 'active', 0, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')",
             [],
-        ).unwrap();
-        let link = add_link(&conn, "f1", "title", "https://github.com/a/b/pull/1", Some("github-pr".into()), None).unwrap();
+        )
+        .unwrap();
+        let link = add_link(
+            &conn,
+            "f1",
+            "title",
+            "https://github.com/a/b/pull/1",
+            Some("github-pr".into()),
+            None,
+        )
+        .unwrap();
         let got = get_link(&conn, &link.id).unwrap();
         assert_eq!(got.url, link.url);
         assert_eq!(got.link_type, "github-pr");

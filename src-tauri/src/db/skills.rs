@@ -23,7 +23,8 @@ pub fn get_feature_skills(
             })
         })
         .map_err(|e| e.to_string())?;
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
 }
 
 /// Set whether a specific skill is enabled for a feature (upsert).
@@ -58,11 +59,9 @@ pub fn resolve_skills_for_feature(
 
     Ok(all_skills
         .iter()
-        .filter(|s| {
-            match override_map.get(s.id.as_str()) {
-                Some(&enabled) => enabled,
-                None => s.default_enabled,
-            }
+        .filter(|s| match override_map.get(s.id.as_str()) {
+            Some(&enabled) => enabled,
+            None => s.default_enabled,
         })
         .cloned()
         .collect())

@@ -22,7 +22,11 @@ fn detect_ides_sync() -> Result<Vec<DetectedIde>, String> {
 
     let editors = [
         ("vscode", "VS Code", &["code"][..]),
-        ("vscode-insiders", "VS Code Insiders", &["code-insiders"][..]),
+        (
+            "vscode-insiders",
+            "VS Code Insiders",
+            &["code-insiders"][..],
+        ),
         ("cursor", "Cursor", &["cursor"][..]),
         ("windsurf", "Windsurf", &["windsurf"][..]),
     ];
@@ -49,14 +53,39 @@ fn detect_ides_sync() -> Result<Vec<DetectedIde>, String> {
 
     let jetbrains_ides = [
         ("idea", "IntelliJ IDEA", "idea", &["idea", "idea64"][..]),
-        ("webstorm", "WebStorm", "webstorm", &["webstorm", "webstorm64"][..]),
-        ("pycharm", "PyCharm", "pycharm", &["pycharm", "pycharm64"][..]),
+        (
+            "webstorm",
+            "WebStorm",
+            "webstorm",
+            &["webstorm", "webstorm64"][..],
+        ),
+        (
+            "pycharm",
+            "PyCharm",
+            "pycharm",
+            &["pycharm", "pycharm64"][..],
+        ),
         ("clion", "CLion", "clion", &["clion", "clion64"][..]),
         ("goland", "GoLand", "goland", &["goland", "goland64"][..]),
-        ("phpstorm", "PhpStorm", "phpstorm", &["phpstorm", "phpstorm64"][..]),
+        (
+            "phpstorm",
+            "PhpStorm",
+            "phpstorm",
+            &["phpstorm", "phpstorm64"][..],
+        ),
         ("rider", "Rider", "rider", &["rider", "rider64"][..]),
-        ("rustrover", "RustRover", "rustrover", &["rustrover", "rustrover64"][..]),
-        ("datagrip", "DataGrip", "datagrip", &["datagrip", "datagrip64"][..]),
+        (
+            "rustrover",
+            "RustRover",
+            "rustrover",
+            &["rustrover", "rustrover64"][..],
+        ),
+        (
+            "datagrip",
+            "DataGrip",
+            "datagrip",
+            &["datagrip", "datagrip64"][..],
+        ),
         ("fleet", "Fleet", "fleet", &["fleet"][..]),
     ];
 
@@ -107,32 +136,62 @@ pub(crate) fn which_command(cmd: &str) -> Option<String> {
     None
 }
 
-fn scan_editor_install_dirs(ides: &mut Vec<DetectedIde>, seen: &mut std::collections::HashSet<String>) {
+fn scan_editor_install_dirs(
+    ides: &mut Vec<DetectedIde>,
+    seen: &mut std::collections::HashSet<String>,
+) {
     #[cfg(target_os = "windows")]
     {
         let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
         let program_files = std::env::var("PROGRAMFILES").unwrap_or_default();
 
         let checks: &[(&str, &str, &[String])] = &[
-            ("vscode", "VS Code", &[
-                format!("{}/Programs/Microsoft VS Code/bin/code.cmd", local_app_data),
-                format!("{}/Microsoft VS Code/bin/code.cmd", program_files),
-            ]),
-            ("vscode-insiders", "VS Code Insiders", &[
-                format!("{}/Programs/Microsoft VS Code Insiders/bin/code-insiders.cmd", local_app_data),
-                format!("{}/Microsoft VS Code Insiders/bin/code-insiders.cmd", program_files),
-            ]),
-            ("cursor", "Cursor", &[
-                format!("{}/Programs/cursor/resources/app/bin/cursor.cmd", local_app_data),
-                format!("{}/cursor/Cursor.exe", local_app_data),
-            ]),
+            (
+                "vscode",
+                "VS Code",
+                &[
+                    format!("{}/Programs/Microsoft VS Code/bin/code.cmd", local_app_data),
+                    format!("{}/Microsoft VS Code/bin/code.cmd", program_files),
+                ],
+            ),
+            (
+                "vscode-insiders",
+                "VS Code Insiders",
+                &[
+                    format!(
+                        "{}/Programs/Microsoft VS Code Insiders/bin/code-insiders.cmd",
+                        local_app_data
+                    ),
+                    format!(
+                        "{}/Microsoft VS Code Insiders/bin/code-insiders.cmd",
+                        program_files
+                    ),
+                ],
+            ),
+            (
+                "cursor",
+                "Cursor",
+                &[
+                    format!(
+                        "{}/Programs/cursor/resources/app/bin/cursor.cmd",
+                        local_app_data
+                    ),
+                    format!("{}/cursor/Cursor.exe", local_app_data),
+                ],
+            ),
         ];
         for (id, name, paths) in checks {
-            if seen.contains(*id) { continue; }
+            if seen.contains(*id) {
+                continue;
+            }
             for p in *paths {
                 if Path::new(p).exists() {
                     seen.insert(id.to_string());
-                    ides.push(DetectedIde { id: id.to_string(), name: name.to_string(), command: p.clone() });
+                    ides.push(DetectedIde {
+                        id: id.to_string(),
+                        name: name.to_string(),
+                        command: p.clone(),
+                    });
                     break;
                 }
             }
@@ -150,7 +209,11 @@ fn scan_editor_install_dirs(ides: &mut Vec<DetectedIde>, seen: &mut std::collect
         for &(id, name, path) in macos_editors {
             if !seen.contains(id) && Path::new(path).exists() {
                 seen.insert(id.to_string());
-                ides.push(DetectedIde { id: id.into(), name: name.into(), command: path.into() });
+                ides.push(DetectedIde {
+                    id: id.into(),
+                    name: name.into(),
+                    command: path.into(),
+                });
             }
         }
     }
@@ -193,18 +256,20 @@ fn scan_jetbrains_toolbox(
 fn get_jetbrains_toolbox_scripts_dir() -> Option<std::path::PathBuf> {
     #[cfg(target_os = "windows")]
     {
-        std::env::var("LOCALAPPDATA").ok()
-            .map(|d| Path::new(&d).join("JetBrains").join("Toolbox").join("scripts"))
+        std::env::var("LOCALAPPDATA").ok().map(|d| {
+            Path::new(&d)
+                .join("JetBrains")
+                .join("Toolbox")
+                .join("scripts")
+        })
     }
     #[cfg(target_os = "macos")]
     {
-        dirs::home_dir()
-            .map(|h| h.join("Library/Application Support/JetBrains/Toolbox/scripts"))
+        dirs::home_dir().map(|h| h.join("Library/Application Support/JetBrains/Toolbox/scripts"))
     }
     #[cfg(target_os = "linux")]
     {
-        dirs::home_dir()
-            .map(|h| h.join(".local/share/JetBrains/Toolbox/scripts"))
+        dirs::home_dir().map(|h| h.join(".local/share/JetBrains/Toolbox/scripts"))
     }
 }
 
@@ -260,7 +325,11 @@ fn scan_jetbrains_install_dirs(
     #[cfg(target_os = "macos")]
     {
         let macos_jb_apps: &[(&str, &str, &[&str])] = &[
-            ("idea", "IntelliJ IDEA", &["IntelliJ IDEA.app", "IntelliJ IDEA CE.app"]),
+            (
+                "idea",
+                "IntelliJ IDEA",
+                &["IntelliJ IDEA.app", "IntelliJ IDEA CE.app"],
+            ),
             ("webstorm", "WebStorm", &["WebStorm.app"]),
             ("pycharm", "PyCharm", &["PyCharm.app", "PyCharm CE.app"]),
             ("clion", "CLion", &["CLion.app"]),

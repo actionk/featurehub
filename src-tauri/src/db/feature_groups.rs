@@ -88,7 +88,11 @@ pub fn update_feature_group(
         .map_err(|e| e.to_string())?;
 
     let new_name = name.unwrap_or(current.name);
-    let new_color = if color.is_some() { color } else { current.color };
+    let new_color = if color.is_some() {
+        color
+    } else {
+        current.color
+    };
 
     conn.execute(
         "UPDATE feature_groups SET name = ?1, color = ?2 WHERE id = ?3",

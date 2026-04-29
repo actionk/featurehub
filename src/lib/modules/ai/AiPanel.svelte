@@ -642,7 +642,7 @@
     await handleStartSession(initPrompt);
   }
 
-  async function handleResumeSession(session: Session) {
+  async function handleResumeSession(session: Session, dangerouslySkipPermissions = false) {
     // If terminal already open for this session, just switch to it
     const existing = findTerminalForSession(session.id);
     if (existing) {
@@ -651,7 +651,7 @@
     }
 
     try {
-      const result = await ptyResumeSession(session.id, 80, 24);
+      const result = await ptyResumeSession(session.id, 80, 24, dangerouslySkipPermissions);
       const title = session.title ?? "Resumed Session";
       addTerminal({
         terminalId: result.terminalId,
@@ -664,6 +664,9 @@
       activeTerminalId = result.terminalId;
     } catch (e) {
       console.error("Failed to resume session:", e);
+      if (String(e).includes("Session was empty and has been removed")) {
+        onSessionsChanged();
+      }
     }
   }
 
@@ -892,7 +895,15 @@
           </div>
         {:else}
           {@const primarySession = embeddedActiveSessions[0]}
-          <div class="sc-active" oncontextmenu={(e) => handleSessionContextMenu(e, primarySession)} role="article">
+          <div
+            class="sc-active"
+            onclick={() => handleResumeSession(primarySession)}
+            onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleResumeSession(primarySession); } }}
+            oncontextmenu={(e) => handleSessionContextMenu(e, primarySession)}
+            role="button"
+            tabindex="0"
+            title="Open active terminal"
+          >
             <div class="sc-active-content">
               <div class="sc-active-row1">
                 <span class="sc-live-pill">
@@ -911,18 +922,26 @@
                 <div class="sc-active-summary">{primarySession.summary}</div>
               {/if}
             </div>
-            <button class="sc-open-btn" onclick={() => handleResumeSession(primarySession)}>
+            <button class="sc-open-btn" onclick={(e) => { e.stopPropagation(); handleResumeSession(primarySession); }}>
               Open Terminal →
             </button>
           </div>
           {#each embeddedActiveSessions.slice(1) as session (session.id)}
-            <div class="sc-active-compact" oncontextmenu={(e) => handleSessionContextMenu(e, session)} role="article">
+            <div
+              class="sc-active-compact"
+              onclick={() => handleResumeSession(session)}
+              onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleResumeSession(session); } }}
+              oncontextmenu={(e) => handleSessionContextMenu(e, session)}
+              role="button"
+              tabindex="0"
+              title="Open active terminal"
+            >
               <span class="sc-compact-dot"></span>
               <span class="sc-compact-title">{session.title ?? 'Running session'}</span>
               {#if session.started_at}
                 <span class="sc-compact-timer">{formatElapsed(session.started_at, now)}</span>
               {/if}
-              <button class="sc-compact-open" onclick={() => handleResumeSession(session)}>Open →</button>
+              <button class="sc-compact-open" onclick={(e) => { e.stopPropagation(); handleResumeSession(session); }}>Open →</button>
             </div>
           {/each}
         {/if}
@@ -946,6 +965,20 @@
                 {/if}
               </button>
             {/if}
+            <button
+              class="sc-session-open"
+              onclick={(e) => { e.stopPropagation(); handleResumeSession(session); }}
+              title="Open session"
+            >
+              Open
+            </button>
+            <button
+              class="sc-session-open sc-session-danger-open"
+              onclick={(e) => { e.stopPropagation(); handleResumeSession(session, true); }}
+              title="Open with --dangerously-skip-permissions"
+            >
+              Full Access
+            </button>
           </div>
         {/each}
 
@@ -972,6 +1005,20 @@
                 {/if}
               </button>
             {/if}
+            <button
+              class="sc-session-open"
+              onclick={(e) => { e.stopPropagation(); handleResumeSession(session); }}
+              title="Open session"
+            >
+              Open
+            </button>
+            <button
+              class="sc-session-open sc-session-danger-open"
+              onclick={(e) => { e.stopPropagation(); handleResumeSession(session, true); }}
+              title="Open with --dangerously-skip-permissions"
+            >
+              Full Access
+            </button>
           </div>
         {/each}
 

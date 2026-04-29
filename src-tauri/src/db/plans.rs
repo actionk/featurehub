@@ -128,19 +128,13 @@ pub fn update_plan(
     let now = Utc::now().to_rfc3339();
 
     if let Some(t) = title {
-        conn.execute(
-            "UPDATE plans SET title = ?1 WHERE id = ?2",
-            params![t, id],
-        )
-        .map_err(|e| e.to_string())?;
+        conn.execute("UPDATE plans SET title = ?1 WHERE id = ?2", params![t, id])
+            .map_err(|e| e.to_string())?;
     }
 
     if let Some(b) = body {
-        conn.execute(
-            "UPDATE plans SET body = ?1 WHERE id = ?2",
-            params![b, id],
-        )
-        .map_err(|e| e.to_string())?;
+        conn.execute("UPDATE plans SET body = ?1 WHERE id = ?2", params![b, id])
+            .map_err(|e| e.to_string())?;
     }
 
     // Reset status to pending if it was rejected (revised plan)

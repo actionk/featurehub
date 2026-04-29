@@ -8,8 +8,7 @@ use crate::storage::{StorageConfig, StorageEntry};
 pub fn config_dir() -> Result<PathBuf, String> {
     let data_dir = dirs::data_dir().ok_or("Could not find data directory")?;
     let app_dir = data_dir.join("com.littlebrushgames.feature-hub");
-    std::fs::create_dir_all(&app_dir)
-        .map_err(|e| format!("Failed to create config dir: {}", e))?;
+    std::fs::create_dir_all(&app_dir).map_err(|e| format!("Failed to create config dir: {}", e))?;
     Ok(app_dir)
 }
 
@@ -147,7 +146,11 @@ pub fn save_settings(settings: &AppSettings) -> Result<(), String> {
 pub struct StorageSettings {
     #[serde(default)]
     pub mcp_servers: Vec<McpServer>,
-    #[serde(default, alias = "default_directories", deserialize_with = "deserialize_default_repositories")]
+    #[serde(
+        default,
+        alias = "default_directories",
+        deserialize_with = "deserialize_default_repositories"
+    )]
     pub default_repositories: Vec<Repository>,
     #[serde(default)]
     pub extensions: Vec<Extension>,
@@ -220,7 +223,10 @@ pub fn load_storage_settings(storage_path: &Path) -> Result<StorageSettings, Str
     Ok(migrated)
 }
 
-pub fn save_storage_settings(storage_path: &Path, settings: &StorageSettings) -> Result<(), String> {
+pub fn save_storage_settings(
+    storage_path: &Path,
+    settings: &StorageSettings,
+) -> Result<(), String> {
     let path = storage_settings_path(storage_path);
     let data = serde_json::to_string_pretty(settings)
         .map_err(|e| format!("Failed to serialize storage settings: {}", e))?;
@@ -237,7 +243,10 @@ where
     #[serde(untagged)]
     enum RepoEntry {
         Full(Repository),
-        Legacy { path: String, description: Option<String> },
+        Legacy {
+            path: String,
+            description: Option<String>,
+        },
         Simple(String),
     }
 
@@ -249,14 +258,22 @@ where
             // Legacy entries with local paths are dropped; if it looks like a URL, migrate it
             RepoEntry::Legacy { path, description } => {
                 if path.contains("://") || path.ends_with(".git") {
-                    Some(Repository { url: path, name: None, description })
+                    Some(Repository {
+                        url: path,
+                        name: None,
+                        description,
+                    })
                 } else {
                     None // Drop old local-path entries
                 }
             }
             RepoEntry::Simple(s) => {
                 if s.contains("://") || s.ends_with(".git") {
-                    Some(Repository { url: s, name: None, description: None })
+                    Some(Repository {
+                        url: s,
+                        name: None,
+                        description: None,
+                    })
                 } else {
                     None
                 }
@@ -286,7 +303,11 @@ pub fn push_notification(message: &str, feature_id: Option<&str>) -> Result<(), 
 }
 
 /// Append a notification with optional plan_id to the shared notifications file.
-pub fn push_notification_ex(message: &str, feature_id: Option<&str>, plan_id: Option<&str>) -> Result<(), String> {
+pub fn push_notification_ex(
+    message: &str,
+    feature_id: Option<&str>,
+    plan_id: Option<&str>,
+) -> Result<(), String> {
     use std::io::Write;
     let path = notifications_path()?;
     let notif = AppNotification {

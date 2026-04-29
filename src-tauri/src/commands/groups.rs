@@ -4,7 +4,9 @@ use crate::db;
 use crate::AppState;
 
 #[tauri::command]
-pub fn get_feature_groups(state: State<'_, AppState>) -> Result<Vec<db::feature_groups::FeatureGroup>, String> {
+pub fn get_feature_groups(
+    state: State<'_, AppState>,
+) -> Result<Vec<db::feature_groups::FeatureGroup>, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     db::feature_groups::get_feature_groups(&conn)
 }

@@ -3,12 +3,11 @@ use std::sync::Mutex;
 use clap::Parser;
 use feature_hub::{config, db, extensions};
 use rmcp::{
-    ServerHandler,
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
     model::*,
     schemars, tool, tool_router,
     transport::stdio,
-    ServiceExt,
+    ServerHandler, ServiceExt,
 };
 use rusqlite::Connection;
 
@@ -496,11 +495,17 @@ fn db_err(e: String) -> rmcp::ErrorData {
 
 #[tool_router]
 impl FeatureHubMcp {
-    fn new(conn: Connection, default_feature_id: Option<String>, claude_session_id: Option<String>, storage_path: std::path::PathBuf) -> Self {
+    fn new(
+        conn: Connection,
+        default_feature_id: Option<String>,
+        claude_session_id: Option<String>,
+        storage_path: std::path::PathBuf,
+    ) -> Self {
         let feature_context = default_feature_id.as_ref().and_then(|id| {
             build_feature_context(&conn, id, claude_session_id.as_deref(), &storage_path).ok()
         });
-        let extension_registry = extensions::ExtensionRegistry::load_from_dir(&storage_path.join("extensions"));
+        let extension_registry =
+            extensions::ExtensionRegistry::load_from_dir(&storage_path.join("extensions"));
         Self {
             db: std::sync::Arc::new(Mutex::new(conn)),
             default_feature_id,
@@ -595,7 +600,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "List cloned repositories for a feature. Each has clone_status (ready/cloning/failed), repo_url, and local path.")]
+    #[tool(
+        description = "List cloned repositories for a feature. Each has clone_status (ready/cloning/failed), repo_url, and local path."
+    )]
     async fn get_repositories(
         &self,
         Parameters(p): Parameters<FeatureIdParam>,
@@ -610,13 +617,17 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "List default repositories from app settings. These are predefined repo URLs that can be cloned for features.")]
+    #[tool(
+        description = "List default repositories from app settings. These are predefined repo URLs that can be cloned for features."
+    )]
     async fn get_default_repositories(&self) -> Result<CallToolResult, rmcp::ErrorData> {
         let storage_settings = config::load_storage_settings(&self.storage_path).map_err(db_err)?;
         json_result(&storage_settings.default_repositories)
     }
 
-    #[tool(description = "Clone a repository into a feature's workspace. Performs a shallow clone (--depth 1). Use get_default_repositories to see available repos.")]
+    #[tool(
+        description = "Clone a repository into a feature's workspace. Performs a shallow clone (--depth 1). Use get_default_repositories to see available repos."
+    )]
     async fn clone_repository(
         &self,
         Parameters(p): Parameters<CloneRepositoryParams>,
@@ -635,7 +646,11 @@ impl FeatureHubMcp {
         });
 
         // Compute target path
-        let target_path = self.storage_path.join("workspaces").join(&fid).join(&repo_name);
+        let target_path = self
+            .storage_path
+            .join("workspaces")
+            .join(&fid)
+            .join(&repo_name);
 
         if let Some(parent) = target_path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| db_err(e.to_string()))?;
@@ -665,15 +680,22 @@ impl FeatureHubMcp {
         match feature_hub::git::clone_repo(&repo_url, &target_path) {
             Ok(()) => {
                 let conn = self.db.lock().map_err(|e| db_err(e.to_string()))?;
-                db::directories::update_clone_status(&conn, &dir.id, "ready", None).map_err(db_err)?;
-                let _ = config::push_notification(&format!("Repository cloned: {}", repo_name), Some(&fid));
+                db::directories::update_clone_status(&conn, &dir.id, "ready", None)
+                    .map_err(db_err)?;
+                let _ = config::push_notification(
+                    &format!("Repository cloned: {}", repo_name),
+                    Some(&fid),
+                );
                 let updated = db::directories::get_directory(&conn, &dir.id).map_err(db_err)?;
                 json_result(&updated)
             }
             Err(e) => {
                 let conn = self.db.lock().map_err(|e| db_err(e.to_string()))?;
                 let _ = db::directories::update_clone_status(&conn, &dir.id, "failed", Some(&e));
-                Err(rmcp::ErrorData::internal_error(format!("Clone failed: {}", e), None))
+                Err(rmcp::ErrorData::internal_error(
+                    format!("Clone failed: {}", e),
+                    None,
+                ))
             }
         }
     }
@@ -700,7 +722,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Toggle a tag on a feature. If the tag is not assigned, it will be added; if already assigned, it will be removed.")]
+    #[tool(
+        description = "Toggle a tag on a feature. If the tag is not assigned, it will be added; if already assigned, it will be removed."
+    )]
     async fn toggle_tag(
         &self,
         Parameters(p): Parameters<ToggleTagParams>,
@@ -727,7 +751,9 @@ impl FeatureHubMcp {
 
     // ── Write tools ──────────────────────────────────────────────────────
 
-    #[tool(description = "Create a new task on a feature. For Jira-managed tasks, set source='jira' and provide external_key (e.g. PROJ-123), external_url, external_status, and description.")]
+    #[tool(
+        description = "Create a new task on a feature. For Jira-managed tasks, set source='jira' and provide external_key (e.g. PROJ-123), external_url, external_status, and description."
+    )]
     async fn create_task(
         &self,
         Parameters(p): Parameters<CreateTaskParams>,
@@ -781,7 +807,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Submit an implementation plan for user review in the FeatureHub UI. The plan body should be Markdown. Returns the created plan with status 'pending'. The user will review and approve/reject it in the GUI. Poll get_plan_status to check the outcome.")]
+    #[tool(
+        description = "Submit an implementation plan for user review in the FeatureHub UI. The plan body should be Markdown. Returns the created plan with status 'pending'. The user will review and approve/reject it in the GUI. Poll get_plan_status to check the outcome."
+    )]
     async fn submit_plan(
         &self,
         Parameters(p): Parameters<SubmitPlanParams>,
@@ -817,7 +845,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Check the status of a previously submitted plan. Returns the plan with its current status ('pending', 'approved', or 'rejected') and any feedback from the user.")]
+    #[tool(
+        description = "Check the status of a previously submitted plan. Returns the plan with its current status ('pending', 'approved', or 'rejected') and any feedback from the user."
+    )]
     async fn get_plan_status(
         &self,
         Parameters(p): Parameters<GetPlanStatusParams>,
@@ -828,7 +858,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Update an existing plan's title and/or body. If the plan was rejected, updating it resets the status to 'pending' for re-review. Use this instead of creating a new plan when revising a rejected plan.")]
+    #[tool(
+        description = "Update an existing plan's title and/or body. If the plan was rejected, updating it resets the status to 'pending' for re-review. Use this instead of creating a new plan when revising a rejected plan."
+    )]
     async fn update_plan(
         &self,
         Parameters(p): Parameters<UpdatePlanParams>,
@@ -845,7 +877,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Link the current Claude Code session to a feature. Call this at the start of your session so it appears in FeatureHub's session list. If the session is already linked, this is a no-op.")]
+    #[tool(
+        description = "Link the current Claude Code session to a feature. Call this at the start of your session so it appears in FeatureHub's session list. If the session is already linked, this is a no-op."
+    )]
     async fn link_session(
         &self,
         Parameters(p): Parameters<LinkSessionParams>,
@@ -874,7 +908,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Move a session from one feature to another. Updates the session's feature association and search index.")]
+    #[tool(
+        description = "Move a session from one feature to another. Updates the session's feature association and search index."
+    )]
     async fn move_session(
         &self,
         Parameters(p): Parameters<MoveSessionParams>,
@@ -902,7 +938,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Get the persistent context/instructions for a feature. This context is injected into Claude sessions.")]
+    #[tool(
+        description = "Get the persistent context/instructions for a feature. This context is injected into Claude sessions."
+    )]
     async fn get_context(
         &self,
         Parameters(p): Parameters<FeatureIdParam>,
@@ -913,7 +951,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Create or update persistent context/instructions for a feature. Use this for requirements, technical details, and session-spanning information that should persist across conversations.")]
+    #[tool(
+        description = "Create or update persistent context/instructions for a feature. Use this for requirements, technical details, and session-spanning information that should persist across conversations."
+    )]
     async fn save_context(
         &self,
         Parameters(p): Parameters<SaveContextParams>,
@@ -946,7 +986,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Create a new feature. Returns the created feature with its ID. Optionally nest under a parent feature.")]
+    #[tool(
+        description = "Create a new feature. Returns the created feature with its ID. Optionally nest under a parent feature."
+    )]
     async fn create_feature(
         &self,
         Parameters(p): Parameters<CreateFeatureParams>,
@@ -961,7 +1003,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Set or change a feature's parent. Pass a parent_id to nest under another feature, or pass an empty string / null to make it root-level. Prevents cycles.")]
+    #[tool(
+        description = "Set or change a feature's parent. Pass a parent_id to nest under another feature, or pass an empty string / null to make it root-level. Prevents cycles."
+    )]
     async fn set_feature_parent(
         &self,
         Parameters(p): Parameters<SetFeatureParentParams>,
@@ -978,7 +1022,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Delete a feature and its associated data (tasks, links, files, etc.). Children are moved to root level. This is irreversible.")]
+    #[tool(
+        description = "Delete a feature and its associated data (tasks, links, files, etc.). Children are moved to root level. This is irreversible."
+    )]
     async fn delete_feature(
         &self,
         Parameters(p): Parameters<DeleteFeatureParams>,
@@ -994,7 +1040,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Toggle pin status on a feature. Pinned features sort to the top of the list.")]
+    #[tool(
+        description = "Toggle pin status on a feature. Pinned features sort to the top of the list."
+    )]
     async fn toggle_pin(
         &self,
         Parameters(p): Parameters<TogglePinParams>,
@@ -1022,7 +1070,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Add a link to a feature. Returns an error if the URL already exists on this feature to prevent duplicates. For Jira links, include metadata with key, status, issue_type, summary, and assignee fields")]
+    #[tool(
+        description = "Add a link to a feature. Returns an error if the URL already exists on this feature to prevent duplicates. For Jira links, include metadata with key, status, issue_type, summary, and assignee fields"
+    )]
     async fn add_link(
         &self,
         Parameters(p): Parameters<AddLinkParams>,
@@ -1048,7 +1098,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Update an existing link's title, URL, link_type, or description. Use get_links first to find the link ID.")]
+    #[tool(
+        description = "Update an existing link's title, URL, link_type, or description. Use get_links first to find the link ID."
+    )]
     async fn update_link(
         &self,
         Parameters(p): Parameters<UpdateLinkParams>,
@@ -1074,10 +1126,12 @@ impl FeatureHubMcp {
 
     // ── Settings tools ────────────────────────────────────────────────────
 
-    #[tool(description = "Get current app settings including fh CLI path, configured MCP servers, and default repositories")]
+    #[tool(
+        description = "Get current app settings including fh CLI path, configured MCP servers, and default repositories"
+    )]
     fn get_settings(&self) -> Result<CallToolResult, rmcp::ErrorData> {
-        let global = config::load_settings()
-            .map_err(|e| rmcp::ErrorData::internal_error(e, None))?;
+        let global =
+            config::load_settings().map_err(|e| rmcp::ErrorData::internal_error(e, None))?;
         let storage = config::load_storage_settings(&self.storage_path)
             .map_err(|e| rmcp::ErrorData::internal_error(e, None))?;
         // Return a merged view
@@ -1092,7 +1146,9 @@ impl FeatureHubMcp {
         json_result(&combined)
     }
 
-    #[tool(description = "Update app settings. Can set the fh CLI path, configure MCP servers, and/or set default repositories. MCP servers and repositories are per-storage.")]
+    #[tool(
+        description = "Update app settings. Can set the fh CLI path, configure MCP servers, and/or set default repositories. MCP servers and repositories are per-storage."
+    )]
     fn save_settings(
         &self,
         Parameters(p): Parameters<SaveSettingsParams>,
@@ -1101,8 +1157,7 @@ impl FeatureHubMcp {
         if let Some(path) = p.fh_cli_path {
             let mut global = config::load_settings().unwrap_or_default();
             global.fh_cli_path = if path.is_empty() { None } else { Some(path) };
-            config::save_settings(&global)
-                .map_err(|e| rmcp::ErrorData::internal_error(e, None))?;
+            config::save_settings(&global).map_err(|e| rmcp::ErrorData::internal_error(e, None))?;
         }
         // Update storage-specific settings (mcp_servers, default_repositories)
         let mut storage = config::load_storage_settings(&self.storage_path).unwrap_or_default();
@@ -1136,14 +1191,18 @@ impl FeatureHubMcp {
 
     // ── Skills tools ──────────────────────────────────────────────────────
 
-    #[tool(description = "List all configured skills. Skills are reusable instruction sets that can be enabled per-feature to inject guidelines into Claude sessions.")]
+    #[tool(
+        description = "List all configured skills. Skills are reusable instruction sets that can be enabled per-feature to inject guidelines into Claude sessions."
+    )]
     fn get_skills(&self) -> Result<CallToolResult, rmcp::ErrorData> {
         let storage = config::load_storage_settings(&self.storage_path)
             .map_err(|e| rmcp::ErrorData::internal_error(e, None))?;
         json_result(&storage.skills)
     }
 
-    #[tool(description = "Create a new skill. A skill is a reusable set of instructions/guidelines in Markdown that gets injected into Claude sessions when enabled for a feature. Use this to codify team practices, coding standards, or workflow guidelines.")]
+    #[tool(
+        description = "Create a new skill. A skill is a reusable set of instructions/guidelines in Markdown that gets injected into Claude sessions when enabled for a feature. Use this to codify team practices, coding standards, or workflow guidelines."
+    )]
     fn create_skill(
         &self,
         Parameters(p): Parameters<CreateSkillParams>,
@@ -1151,7 +1210,10 @@ impl FeatureHubMcp {
         let mut storage = config::load_storage_settings(&self.storage_path).unwrap_or_default();
         if storage.skills.iter().any(|s| s.id == p.id) {
             return Err(rmcp::ErrorData::internal_error(
-                format!("Skill with id '{}' already exists. Use update_skill to modify it.", p.id),
+                format!(
+                    "Skill with id '{}' already exists. Use update_skill to modify it.",
+                    p.id
+                ),
                 None,
             ));
         }
@@ -1174,13 +1236,22 @@ impl FeatureHubMcp {
         Parameters(p): Parameters<UpdateSkillParams>,
     ) -> Result<CallToolResult, rmcp::ErrorData> {
         let mut storage = config::load_storage_settings(&self.storage_path).unwrap_or_default();
-        let skill = storage.skills.iter_mut().find(|s| s.id == p.id)
-            .ok_or_else(|| rmcp::ErrorData::internal_error(
-                format!("Skill '{}' not found", p.id), None,
-            ))?;
-        if let Some(name) = p.name { skill.name = name; }
-        if let Some(content) = p.content { skill.content = content; }
-        if let Some(enabled) = p.default_enabled { skill.default_enabled = enabled; }
+        let skill = storage
+            .skills
+            .iter_mut()
+            .find(|s| s.id == p.id)
+            .ok_or_else(|| {
+                rmcp::ErrorData::internal_error(format!("Skill '{}' not found", p.id), None)
+            })?;
+        if let Some(name) = p.name {
+            skill.name = name;
+        }
+        if let Some(content) = p.content {
+            skill.content = content;
+        }
+        if let Some(enabled) = p.default_enabled {
+            skill.default_enabled = enabled;
+        }
         let updated = skill.clone();
         config::save_storage_settings(&self.storage_path, &storage)
             .map_err(|e| rmcp::ErrorData::internal_error(e, None))?;
@@ -1198,13 +1269,16 @@ impl FeatureHubMcp {
         storage.skills.retain(|s| s.id != p.id);
         if storage.skills.len() == before {
             return Err(rmcp::ErrorData::internal_error(
-                format!("Skill '{}' not found", p.id), None,
+                format!("Skill '{}' not found", p.id),
+                None,
             ));
         }
         config::save_storage_settings(&self.storage_path, &storage)
             .map_err(|e| rmcp::ErrorData::internal_error(e, None))?;
         let _ = config::push_notification("Skill deleted", None);
-        Ok(CallToolResult::success(vec![Content::text("Skill deleted")]))
+        Ok(CallToolResult::success(vec![Content::text(
+            "Skill deleted",
+        )]))
     }
 
     // ── Scoped convenience tool ──────────────────────────────────────────
@@ -1219,7 +1293,9 @@ impl FeatureHubMcp {
         }
     }
 
-    #[tool(description = "Health check for MCP server diagnostics. Returns storage path, DB status, feature count, and extension info.")]
+    #[tool(
+        description = "Health check for MCP server diagnostics. Returns storage path, DB status, feature count, and extension info."
+    )]
     fn health_check(&self) -> Result<CallToolResult, rmcp::ErrorData> {
         let db_status = match self.db.lock() {
             Ok(conn) => {
@@ -1227,7 +1303,9 @@ impl FeatureHubMcp {
                     .query_row("SELECT COUNT(*) FROM features", [], |row| row.get(0))
                     .unwrap_or(-1);
                 let kb_count: i64 = conn
-                    .query_row("SELECT COUNT(*) FROM knowledge_entries", [], |row| row.get(0))
+                    .query_row("SELECT COUNT(*) FROM knowledge_entries", [], |row| {
+                        row.get(0)
+                    })
                     .unwrap_or(-1);
                 serde_json::json!({
                     "connected": true,
@@ -1238,13 +1316,18 @@ impl FeatureHubMcp {
             Err(_) => serde_json::json!({ "connected": false, "error": "lock poisoned" }),
         };
 
-        let extensions: Vec<_> = self.extension_registry.extensions.iter()
-            .map(|e| serde_json::json!({
-                "id": e.manifest.id,
-                "name": e.manifest.name,
-                "enabled": e.enabled,
-                "tool_count": e.manifest.tools.len(),
-            }))
+        let extensions: Vec<_> = self
+            .extension_registry
+            .extensions
+            .iter()
+            .map(|e| {
+                serde_json::json!({
+                    "id": e.manifest.id,
+                    "name": e.manifest.name,
+                    "enabled": e.enabled,
+                    "tool_count": e.manifest.tools.len(),
+                })
+            })
             .collect();
 
         let result = serde_json::json!({
@@ -1260,7 +1343,9 @@ impl FeatureHubMcp {
 
     // ── Knowledge Base tools ────────────────────────────────────────────
 
-    #[tool(description = "List knowledge base entries. Optionally filter by folder_id. Returns titles, descriptions, and IDs (not full content). Use get_knowledge_entry to read full content.")]
+    #[tool(
+        description = "List knowledge base entries. Optionally filter by folder_id. Returns titles, descriptions, and IDs (not full content). Use get_knowledge_entry to read full content."
+    )]
     async fn list_knowledge(
         &self,
         Parameters(p): Parameters<ListKnowledgeParams>,
@@ -1300,7 +1385,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Create a new knowledge base entry. Use this to save HOW-TOs, findings, research results, and other reusable knowledge.")]
+    #[tool(
+        description = "Create a new knowledge base entry. Use this to save HOW-TOs, findings, research results, and other reusable knowledge."
+    )]
     async fn create_knowledge_entry(
         &self,
         Parameters(p): Parameters<CreateKnowledgeEntryParams>,
@@ -1373,7 +1460,9 @@ impl FeatureHubMcp {
         })
     }
 
-    #[tool(description = "Delete a knowledge base folder. Entries inside are moved to the parent folder.")]
+    #[tool(
+        description = "Delete a knowledge base folder. Entries inside are moved to the parent folder."
+    )]
     async fn delete_knowledge_folder(
         &self,
         Parameters(p): Parameters<DeleteKnowledgeFolderParams>,
@@ -1407,7 +1496,10 @@ impl ServerHandler for FeatureHubMcp {
                 if let Ok(conn) = self.db.lock() {
                     let kb_entries = db::knowledge::list_entries(&conn).unwrap_or_default();
                     if !kb_entries.is_empty() {
-                        text.push_str(&format!("\n\n## Knowledge Base ({} entries)\n", kb_entries.len()));
+                        text.push_str(&format!(
+                            "\n\n## Knowledge Base ({} entries)\n",
+                            kb_entries.len()
+                        ));
                         text.push_str("Use get_knowledge_entry(id) to read full content.\n\n");
                         for entry in &kb_entries {
                             let folder_prefix = if let Some(ref fid) = entry.folder_id {
@@ -1418,16 +1510,22 @@ impl ServerHandler for FeatureHubMcp {
                                 String::new()
                             };
                             if entry.description.is_empty() {
-                                text.push_str(&format!("- {}{} (id: {})\n", folder_prefix, entry.title, entry.id));
+                                text.push_str(&format!(
+                                    "- {}{} (id: {})\n",
+                                    folder_prefix, entry.title, entry.id
+                                ));
                             } else {
-                                text.push_str(&format!("- {}{} — {} (id: {})\n", folder_prefix, entry.title, entry.description, entry.id));
+                                text.push_str(&format!(
+                                    "- {}{} — {} (id: {})\n",
+                                    folder_prefix, entry.title, entry.description, entry.id
+                                ));
                             }
                         }
                     }
                 }
 
                 text
-            },
+            }
         };
 
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
@@ -1494,7 +1592,8 @@ impl ServerHandler for FeatureHubMcp {
         }
 
         // Fall through to static tool router
-        let tool_context = rmcp::handler::server::tool::ToolCallContext::new(self, request, context);
+        let tool_context =
+            rmcp::handler::server::tool::ToolCallContext::new(self, request, context);
         self.tool_router.call(tool_context).await
     }
 
@@ -1525,10 +1624,12 @@ fn build_extension_tool(tool_decl: &feature_hub::extensions::manifest::ToolDecl)
         "properties": props,
         "required": required_params
     });
-    let input_schema = std::sync::Arc::new(
-        schema.as_object().cloned().unwrap_or_default()
-    );
-    Tool::new(tool_decl.name.clone(), tool_decl.description.clone(), input_schema)
+    let input_schema = std::sync::Arc::new(schema.as_object().cloned().unwrap_or_default());
+    Tool::new(
+        tool_decl.name.clone(),
+        tool_decl.description.clone(),
+        input_schema,
+    )
 }
 
 // ─── Feature context builder ─────────────────────────────────────────────────
@@ -1552,7 +1653,12 @@ fn truncate_at_paragraph(text: &str, limit: usize) -> (&str, bool) {
     }
 }
 
-fn build_feature_context(conn: &Connection, feature_id: &str, claude_session_id: Option<&str>, storage_path: &std::path::Path) -> Result<String, String> {
+fn build_feature_context(
+    conn: &Connection,
+    feature_id: &str,
+    claude_session_id: Option<&str>,
+    storage_path: &std::path::Path,
+) -> Result<String, String> {
     let feature = db::features::get_feature(conn, feature_id)?;
     let tasks = db::tasks::get_tasks(conn, feature_id)?;
     let note = db::notes::get_note(conn, feature_id)?;
@@ -1565,7 +1671,10 @@ fn build_feature_context(conn: &Connection, feature_id: &str, claude_session_id:
 
     let mut ctx = String::new();
     let now = chrono::Utc::now().to_rfc3339();
-    ctx.push_str(&format!("FeatureHub MCP server — session scoped to this feature (loaded at {}):\n\n", now));
+    ctx.push_str(&format!(
+        "FeatureHub MCP server — session scoped to this feature (loaded at {}):\n\n",
+        now
+    ));
     ctx.push_str("NOTE: This is a live snapshot. If you are resuming a session, this data is FRESH from the database and may differ from what you saw previously. Always trust this current state over your prior conversation context.\n\n");
 
     // Feature summary
@@ -1604,9 +1713,11 @@ fn build_feature_context(conn: &Connection, feature_id: &str, claude_session_id:
     // Repositories
     if !dirs.is_empty() {
         ctx.push_str("\n## Repositories\n");
-        ctx.push_str("IMPORTANT: These are the cloned code repositories for this feature. \
+        ctx.push_str(
+            "IMPORTANT: These are the cloned code repositories for this feature. \
 Your current working directory is a FeatureHub workspace, NOT the code repo. \
-Always use these paths as the base for reading, editing, and searching code files.\n\n");
+Always use these paths as the base for reading, editing, and searching code files.\n\n",
+        );
         for d in &dirs {
             let status = d.clone_status.as_deref().unwrap_or("ready");
             let label = d.label.as_deref().unwrap_or("");
@@ -1614,7 +1725,9 @@ Always use these paths as the base for reading, editing, and searching code file
             let resolved_path = feature_hub::paths::resolve_path_string(&d.path, storage_path);
             match status {
                 "ready" => {
-                    let branch = feature_hub::git::get_current_branch(std::path::Path::new(&resolved_path)).ok();
+                    let branch =
+                        feature_hub::git::get_current_branch(std::path::Path::new(&resolved_path))
+                            .ok();
                     if !label.is_empty() {
                         ctx.push_str(&format!("- {} ({})", resolved_path, label));
                     } else {
@@ -1629,7 +1742,10 @@ Always use these paths as the base for reading, editing, and searching code file
                     ctx.push('\n');
                 }
                 "cloning" => {
-                    ctx.push_str(&format!("- {} [CLONING - not ready yet] ({})\n", label, url_info));
+                    ctx.push_str(&format!(
+                        "- {} [CLONING - not ready yet] ({})\n",
+                        label, url_info
+                    ));
                 }
                 "failed" => {
                     let err = d.clone_error.as_deref().unwrap_or("unknown error");
@@ -1645,11 +1761,7 @@ Always use these paths as the base for reading, editing, and searching code file
     // Tasks
     if !tasks.is_empty() {
         let done_count = tasks.iter().filter(|t| t.done).count();
-        ctx.push_str(&format!(
-            "\n## Tasks ({}/{})\n",
-            done_count,
-            tasks.len()
-        ));
+        ctx.push_str(&format!("\n## Tasks ({}/{})\n", done_count, tasks.len()));
         for t in &tasks {
             let check = if t.done { "x" } else { " " };
             let mut line = format!("- [{}] {}", check, t.title);
@@ -1664,7 +1776,11 @@ Always use these paths as the base for reading, editing, and searching code file
             ctx.push('\n');
             if let Some(ref desc) = t.description {
                 if !desc.is_empty() {
-                    let truncated = if desc.len() > 200 { &desc[..200] } else { desc.as_str() };
+                    let truncated = if desc.len() > 200 {
+                        &desc[..200]
+                    } else {
+                        desc.as_str()
+                    };
                     ctx.push_str(&format!("  > {}\n", truncated.replace('\n', " ")));
                 }
             }
@@ -1677,7 +1793,10 @@ Always use these paths as the base for reading, editing, and searching code file
         ctx.push_str(&format!("\n## Pending Plans ({})\n", pending_plans.len()));
         ctx.push_str("These plans are awaiting user review in the FeatureHub UI. Use `get_plan_status` to check if they've been resolved.\n");
         for p in &pending_plans {
-            ctx.push_str(&format!("- {} (id: {}, submitted: {})\n", p.title, p.id, p.created_at));
+            ctx.push_str(&format!(
+                "- {} (id: {}, submitted: {})\n",
+                p.title, p.id, p.created_at
+            ));
         }
     }
 
@@ -1686,7 +1805,10 @@ Always use these paths as the base for reading, editing, and searching code file
         ctx.push_str("\n## Links\n");
         for l in &links {
             if let Some(desc) = &l.description {
-                ctx.push_str(&format!("- [{}]({}) ({}) — {}\n", l.title, l.url, l.link_type, desc));
+                ctx.push_str(&format!(
+                    "- [{}]({}) ({}) — {}\n",
+                    l.title, l.url, l.link_type, desc
+                ));
             } else {
                 ctx.push_str(&format!("- [{}]({}) ({})\n", l.title, l.url, l.link_type));
             }
@@ -1695,15 +1817,23 @@ Always use these paths as the base for reading, editing, and searching code file
 
     // Session history
     if !sessions.is_empty() {
-        let other_sessions: Vec<_> = sessions.iter()
+        let other_sessions: Vec<_> = sessions
+            .iter()
             .filter(|s| claude_session_id.is_none_or(|cid| s.claude_session_id != cid))
             .collect();
         if !other_sessions.is_empty() {
-            ctx.push_str(&format!("\n## Session History ({} previous)\n", other_sessions.len()));
+            ctx.push_str(&format!(
+                "\n## Session History ({} previous)\n",
+                other_sessions.len()
+            ));
             if let Some(last) = other_sessions.first() {
                 let date = last.ended_at.as_deref().unwrap_or(last.linked_at.as_str());
                 let title = last.title.as_deref().unwrap_or("untitled");
-                ctx.push_str(&format!("Most recent: \"{}\" ({})\n", title, &date[..10.min(date.len())]));
+                ctx.push_str(&format!(
+                    "Most recent: \"{}\" ({})\n",
+                    title,
+                    &date[..10.min(date.len())]
+                ));
             }
         }
     }
@@ -1714,12 +1844,15 @@ Always use these paths as the base for reading, editing, and searching code file
         ctx.push_str("Use `get_files` tool to access file details and paths.\n");
         // Build folder path map for display
         let folders = db::folders::get_folders(conn, feature_id).unwrap_or_default();
-        let folder_names: std::collections::HashMap<&str, &str> = folders.iter()
+        let folder_names: std::collections::HashMap<&str, &str> = folders
+            .iter()
             .map(|f| (f.id.as_str(), f.name.as_str()))
             .collect();
         for f in files.iter().take(20) {
             let size_kb = f.size / 1024;
-            let prefix = f.folder_id.as_deref()
+            let prefix = f
+                .folder_id
+                .as_deref()
                 .and_then(|fid| folder_names.get(fid))
                 .map(|name| format!("{}/", name))
                 .unwrap_or_default();
@@ -1758,8 +1891,10 @@ Always use these paths as the base for reading, editing, and searching code file
         }
     }
 
-    ctx.push_str("\nUse `get_current_feature` to retrieve the feature ID, then pass it to other tools. \
-Use `search` to find related features, links, or sessions across the entire storage.\n");
+    ctx.push_str(
+        "\nUse `get_current_feature` to retrieve the feature ID, then pass it to other tools. \
+Use `search` to find related features, links, or sessions across the entire storage.\n",
+    );
 
     // Add initialization instructions
     ctx.push_str("\n## Feature Initialization\n");
@@ -1828,9 +1963,11 @@ high-level decisions, architecture, requirements, and current state.\n\
         ctx.push_str("**Link your session** — At the very start of this session, call `link_session` with this feature's ID \
 and your Claude Code session ID to register yourself in FeatureHub. This ensures your session appears in the feature's session list.\n\n");
     }
-    ctx.push_str("**Validate branch before working** — Before implementation, run `git status`. \
+    ctx.push_str(
+        "**Validate branch before working** — Before implementation, run `git status`. \
 Alert the user if there are uncommitted changes. If clean, check for the feature branch — \
-propose switching or creating one. Always confirm before switching/creating branches.\n\n");
+propose switching or creating one. Always confirm before switching/creating branches.\n\n",
+    );
 
     ctx.push_str("**Save PR links** — After creating a pull request, save its URL with `add_link` (type `github`, description \"PR: <title>\").\n\n");
 
@@ -1853,7 +1990,10 @@ If you're missing context, ask the user.\n");
     // Knowledge Base TOC — storage-scoped, always included if entries exist
     let kb_entries = db::knowledge::list_entries(conn).unwrap_or_default();
     if !kb_entries.is_empty() {
-        ctx.push_str(&format!("\n## Knowledge Base ({} entries)\n", kb_entries.len()));
+        ctx.push_str(&format!(
+            "\n## Knowledge Base ({} entries)\n",
+            kb_entries.len()
+        ));
         ctx.push_str("Use `get_knowledge_entry(id)` to read full content, or `search_knowledge` to search by keyword. \
 Check relevant entries before starting implementation — they may contain HOW-TOs, patterns, or prior research.\n\
 If you discover a reusable pattern, gotcha, or technique during this session, consider saving it with `create_knowledge_entry` \
@@ -1871,9 +2011,15 @@ so it's available across all features.\n\n");
             };
 
             if entry.description.is_empty() {
-                ctx.push_str(&format!("- {}{} (id: {})\n", folder_prefix, entry.title, entry.id));
+                ctx.push_str(&format!(
+                    "- {}{} (id: {})\n",
+                    folder_prefix, entry.title, entry.id
+                ));
             } else {
-                ctx.push_str(&format!("- {}{} — {} (id: {})\n", folder_prefix, entry.title, entry.description, entry.id));
+                ctx.push_str(&format!(
+                    "- {}{} — {} (id: {})\n",
+                    folder_prefix, entry.title, entry.description, entry.id
+                ));
             }
         }
     }
@@ -1889,8 +2035,9 @@ so it's available across all features.\n\n");
     }
 
     // Skill instructions (resolved per-feature with overrides)
-    let active_skills = db::skills::resolve_skills_for_feature(conn, feature_id, &storage_settings.skills)
-        .unwrap_or_default();
+    let active_skills =
+        db::skills::resolve_skills_for_feature(conn, feature_id, &storage_settings.skills)
+            .unwrap_or_default();
     for skill in &active_skills {
         if !skill.content.is_empty() {
             ctx.push_str(&format!("\n## Skill: {}\n", skill.name));
@@ -1918,8 +2065,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .into());
     }
-    let conn =
-        Connection::open(&db_path).map_err(|e| format!("Failed to open database: {}", e))?;
+    let conn = Connection::open(&db_path).map_err(|e| format!("Failed to open database: {}", e))?;
     db::initialize(&conn).map_err(|e| format!("Failed to initialize database: {}", e))?;
     db::migrate_to_relative_paths(&conn, &storage_path);
 

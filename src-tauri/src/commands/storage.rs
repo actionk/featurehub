@@ -36,16 +36,18 @@ pub fn get_storages(app: tauri::AppHandle) -> Result<Vec<StorageInfo>, String> {
 pub fn get_active_storage(app: tauri::AppHandle) -> Result<Option<StorageInfo>, String> {
     let config = storage::load_config(&app)?;
     match &config.active_storage_id {
-        Some(active_id) => Ok(config.storages.iter().find(|s| s.id == *active_id).map(|s| {
-            StorageInfo {
+        Some(active_id) => Ok(config
+            .storages
+            .iter()
+            .find(|s| s.id == *active_id)
+            .map(|s| StorageInfo {
                 id: s.id.clone(),
                 name: storage::storage_name(s),
                 path: s.path.clone(),
                 is_active: true,
                 git_status: storage::check_git_status(&s.path),
                 icon: s.icon.clone(),
-            }
-        })),
+            })),
         None => Ok(None),
     }
 }
@@ -117,8 +119,12 @@ fn do_switch_storage(
     let new_registry = crate::extensions::ExtensionRegistry::load_from_dir(&ext_dir);
     for ext in &new_registry.extensions {
         for table in &ext.manifest.tables {
-            if let Err(e) = crate::extensions::table_provisioner::provision_table(&new_conn, table) {
-                eprintln!("[extensions] Table provisioning failed on storage switch: {}", e);
+            if let Err(e) = crate::extensions::table_provisioner::provision_table(&new_conn, table)
+            {
+                eprintln!(
+                    "[extensions] Table provisioning failed on storage switch: {}",
+                    e
+                );
             }
         }
     }
@@ -135,6 +141,17 @@ fn do_switch_storage(
         let mut ext_guard = state.extensions.lock().map_err(|e| e.to_string())?;
         *ext_guard = new_registry;
     }
+    state.stats_cache.lock().map_err(|e| e.to_string())?.clear();
+    state
+        .jsonl_path_cache
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clear();
+    state
+        .status_hint_cache
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clear();
 
     config.active_storage_id = Some(id.to_string());
     storage::save_config(app, &config)
@@ -167,9 +184,8 @@ pub fn rename_storage(
         }
         // Checkpoint WAL and switch journal mode BEFORE closing so the
         // -wal/-shm files are cleaned up.
-        let _ = old_conn.execute_batch(
-            "PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode=DELETE;"
-        );
+        let _ =
+            old_conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode=DELETE;");
         // Explicitly close — unlike Drop, this ensures all handles are released.
         // close() consumes the connection and returns any unfinalized-statement errors.
         if let Err((_conn, e)) = old_conn.close() {
@@ -206,8 +222,7 @@ pub fn rename_storage(
 
         let new_conn = rusqlite::Connection::open(&db_path)
             .map_err(|e| format!("Failed to open database at new location: {}", e))?;
-        db::initialize(&new_conn)
-            .map_err(|e| format!("Failed to initialize database: {}", e))?;
+        db::initialize(&new_conn).map_err(|e| format!("Failed to initialize database: {}", e))?;
 
         {
             let mut db_guard = state.db.lock().map_err(|e| e.to_string())?;

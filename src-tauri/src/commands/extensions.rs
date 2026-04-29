@@ -255,12 +255,8 @@ mod settings_tests {
         let tmp = TempDir::new().unwrap();
         let sp = tmp.path();
         // No settings.json exists
-        set_extension_settings_inner(
-            sp,
-            "github_prs",
-            serde_json::json!({"poll_enabled": false}),
-        )
-        .unwrap();
+        set_extension_settings_inner(sp, "github_prs", serde_json::json!({"poll_enabled": false}))
+            .unwrap();
         let got = get_extension_settings_inner(sp, "github_prs").unwrap();
         assert_eq!(got["poll_enabled"], false);
     }
@@ -274,12 +270,8 @@ mod settings_tests {
             r#"{"extensions": [{"id":"jira","enabled":true,"instructions":""}], "extension_settings": {}}"#,
         )
         .unwrap();
-        set_extension_settings_inner(
-            sp,
-            "github_prs",
-            serde_json::json!({"poll_enabled": true}),
-        )
-        .unwrap();
+        set_extension_settings_inner(sp, "github_prs", serde_json::json!({"poll_enabled": true}))
+            .unwrap();
         let text = std::fs::read_to_string(sp.join("settings.json")).unwrap();
         let v: serde_json::Value = serde_json::from_str(&text).unwrap();
         assert!(v.get("extensions").is_some(), "extensions array preserved");

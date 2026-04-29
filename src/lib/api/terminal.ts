@@ -61,11 +61,13 @@ export async function ptyResumeSession(
   sessionDbId: string,
   cols: number,
   rows: number,
+  dangerouslySkipPermissions?: boolean,
 ): Promise<PtySessionResult> {
   return invoke<PtySessionResult>("pty_resume_session", {
     sessionDbId,
     cols,
     rows,
+    dangerouslySkipPermissions: dangerouslySkipPermissions ?? false,
   });
 }
 

@@ -9,7 +9,10 @@ use std::path::PathBuf;
 use std::process::Command;
 
 #[derive(Parser)]
-#[command(name = "fh", about = "FeatureHub CLI — launch Claude sessions linked to features")]
+#[command(
+    name = "fh",
+    about = "FeatureHub CLI — launch Claude sessions linked to features"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -55,10 +58,7 @@ fn open_db() -> Result<Connection, String> {
     Ok(conn)
 }
 
-fn find_feature(
-    conn: &Connection,
-    query: &str,
-) -> Result<db::features::FeatureSummary, String> {
+fn find_feature(conn: &Connection, query: &str) -> Result<db::features::FeatureSummary, String> {
     let features = db::features::get_features(conn, None, None)?;
 
     // Try exact ID prefix match first
@@ -77,17 +77,9 @@ fn find_feature(
         0 => Err(format!("No feature found matching '{}'", query)),
         1 => Ok(matches[0].clone()),
         _ => {
-            let mut msg = format!(
-                "Multiple features match '{}'. Be more specific:\n",
-                query
-            );
+            let mut msg = format!("Multiple features match '{}'. Be more specific:\n", query);
             for f in &matches {
-                msg.push_str(&format!(
-                    "  [{}] {} ({})\n",
-                    &f.id[..8],
-                    f.title,
-                    f.status
-                ));
+                msg.push_str(&format!("  [{}] {} ({})\n", &f.id[..8], f.title, f.status));
             }
             Err(msg)
         }
@@ -134,7 +126,10 @@ fn find_session_summary(project_path: &str, session_id: &str) -> (Option<String>
     let projects_dir = home.join(".claude").join("projects").join(&encoded);
 
     // Try sessions-index.json first (Claude Code's own title)
-    let (index_title, _) = feature_hub::claude::session_parser::find_title_in_sessions_index(&projects_dir, session_id);
+    let (index_title, _) = feature_hub::claude::session_parser::find_title_in_sessions_index(
+        &projects_dir,
+        session_id,
+    );
     if index_title.is_some() {
         return (index_title, None);
     }
@@ -256,7 +251,11 @@ fn cmd_list(filter: Option<String>) -> Result<(), String> {
 fn fh_mcp_path() -> Option<PathBuf> {
     let current_exe = std::env::current_exe().ok()?;
     let dir = current_exe.parent()?;
-    let mcp_name = if cfg!(windows) { "fh-mcp.exe" } else { "fh-mcp" };
+    let mcp_name = if cfg!(windows) {
+        "fh-mcp.exe"
+    } else {
+        "fh-mcp"
+    };
     let mcp_path = dir.join(mcp_name);
     if mcp_path.exists() {
         Some(mcp_path)
@@ -267,16 +266,23 @@ fn fh_mcp_path() -> Option<PathBuf> {
 
 /// Build a temporary MCP config JSON file containing the featurehub server and
 /// any user-configured MCP servers (filtered per-feature). Returns CLI args to pass to `claude`.
-fn build_mcp_args(feature_id: &str, claude_session_id: &str, conn: &rusqlite::Connection) -> Vec<String> {
+fn build_mcp_args(
+    feature_id: &str,
+    claude_session_id: &str,
+    conn: &rusqlite::Connection,
+) -> Vec<String> {
     let mut mcp_servers = serde_json::Map::new();
 
     // Add featurehub MCP server
     if let Some(mcp_bin) = fh_mcp_path() {
         let mcp_bin_str = mcp_bin.to_string_lossy().replace('\\', "/");
-        mcp_servers.insert("featurehub".to_string(), serde_json::json!({
-            "command": mcp_bin_str,
-            "args": ["--feature", feature_id, "--session-id", claude_session_id]
-        }));
+        mcp_servers.insert(
+            "featurehub".to_string(),
+            serde_json::json!({
+                "command": mcp_bin_str,
+                "args": ["--feature", feature_id, "--session-id", claude_session_id]
+            }),
+        );
     }
 
     // Add user-configured + extension MCP servers, filtered by per-feature overrides
@@ -319,7 +325,10 @@ fn build_mcp_args(feature_id: &str, claude_session_id: &str, conn: &rusqlite::Co
                         eprintln!("Warning: Failed to write MCP config: {}", e);
                         return Vec::new();
                     }
-                    vec!["--mcp-config".to_string(), path.to_string_lossy().to_string()]
+                    vec![
+                        "--mcp-config".to_string(),
+                        path.to_string_lossy().to_string(),
+                    ]
                 }
                 Err(e) => {
                     eprintln!("Warning: Failed to serialize MCP config: {}", e);
@@ -345,7 +354,10 @@ fn get_feature_dir(feature_id: &str) -> Result<PathBuf, String> {
 
 /// Core logic for starting a Claude session on a feature.
 /// Used by both `cmd_start` (CLI subcommand) and `cmd_interactive` (interactive menu).
-fn cmd_start_feature(feature: &db::features::FeatureSummary, prompt: Option<String>) -> Result<(), String> {
+fn cmd_start_feature(
+    feature: &db::features::FeatureSummary,
+    prompt: Option<String>,
+) -> Result<(), String> {
     let conn = open_db()?;
 
     println!("Feature: {} [{}]", feature.title, feature.status);
@@ -365,17 +377,18 @@ fn cmd_start_feature(feature: &db::features::FeatureSummary, prompt: Option<Stri
     let claude_session_id = uuid::Uuid::new_v4().to_string();
 
     // Create session record with the known ID immediately
-    let session_id =
-        db::sessions::create_cli_session(&conn, &feature.id, Some(work_dir_rel), &claude_session_id)?;
+    let session_id = db::sessions::create_cli_session(
+        &conn,
+        &feature.id,
+        Some(work_dir_rel),
+        &claude_session_id,
+    )?;
 
     println!("Starting Claude in {}...", work_dir);
     println!("Session ID: {}", &claude_session_id[..8]);
 
     // Build claude args
-    let mut args: Vec<String> = vec![
-        "--session-id".to_string(),
-        claude_session_id.clone(),
-    ];
+    let mut args: Vec<String> = vec!["--session-id".to_string(), claude_session_id.clone()];
 
     // Add MCP config (featurehub + user-configured servers, filtered per-feature)
     args.extend(build_mcp_args(&feature.id, &claude_session_id, &conn));
@@ -384,12 +397,14 @@ fn cmd_start_feature(feature: &db::features::FeatureSummary, prompt: Option<Stri
     feature_hub::claude::launcher::push_default_allowed_tools(&mut args);
 
     // Grant Claude access to all ready repositories
-    let ready_dirs: Vec<_> = directories.iter().filter(|d| {
-        d.clone_status.as_deref().unwrap_or("ready") == "ready"
-    }).collect();
-    let not_ready: Vec<_> = directories.iter().filter(|d| {
-        d.clone_status.as_deref().unwrap_or("ready") != "ready"
-    }).collect();
+    let ready_dirs: Vec<_> = directories
+        .iter()
+        .filter(|d| d.clone_status.as_deref().unwrap_or("ready") == "ready")
+        .collect();
+    let not_ready: Vec<_> = directories
+        .iter()
+        .filter(|d| d.clone_status.as_deref().unwrap_or("ready") != "ready")
+        .collect();
     if !not_ready.is_empty() {
         for d in &not_ready {
             let status = d.clone_status.as_deref().unwrap_or("unknown");
@@ -411,7 +426,8 @@ fn cmd_start_feature(feature: &db::features::FeatureSummary, prompt: Option<Stri
     {
         let mut trust_dirs: Vec<&str> = Vec::with_capacity(ready_dirs.len() + 1);
         trust_dirs.push(work_dir.as_str());
-        let resolved_dirs: Vec<String> = ready_dirs.iter()
+        let resolved_dirs: Vec<String> = ready_dirs
+            .iter()
             .map(|d| feature_hub::paths::resolve_path_string(&d.path, &storage_path))
             .collect();
         for d in &resolved_dirs {
@@ -448,7 +464,10 @@ fn cmd_start_feature(feature: &db::features::FeatureSummary, prompt: Option<Stri
     // If the session has no title/summary, check if Claude actually created any transcript.
     // When the user exits without sending a single message, Claude won't create a JSONL file
     // or index entry — in that case, automatically unlink the empty session.
-    if title.is_none() && summary.is_none() && !session_has_transcript(&work_dir, &claude_session_id) {
+    if title.is_none()
+        && summary.is_none()
+        && !session_has_transcript(&work_dir, &claude_session_id)
+    {
         db::sessions::unlink_session(&conn, &session_id)?;
         println!("Session was empty — automatically unlinked.");
     } else {
@@ -495,7 +514,11 @@ fn cmd_resume_session(claude_session_id: &str, feature_id: &str) -> Result<(), S
     let feature_dir = get_feature_dir(feature_id)?;
     let work_dir = feature_dir.to_string_lossy().to_string();
 
-    println!("Resuming session {} in {}...", &claude_session_id[..8.min(claude_session_id.len())], work_dir);
+    println!(
+        "Resuming session {} in {}...",
+        &claude_session_id[..8.min(claude_session_id.len())],
+        work_dir
+    );
 
     // Build claude args with MCP config
     let mut args = vec!["--resume".to_string(), claude_session_id.to_string()];
@@ -551,24 +574,40 @@ fn cmd_resume_session(claude_session_id: &str, feature_id: &str) -> Result<(), S
 
 fn render_config() -> RenderConfig<'static> {
     RenderConfig::default()
-        .with_prompt_prefix(Styled::new("?").with_style_sheet(
-            StyleSheet::new().with_fg(Color::LightMagenta).with_attr(Attributes::BOLD),
-        ))
-        .with_answered_prompt_prefix(Styled::new("✓").with_style_sheet(
-            StyleSheet::new().with_fg(Color::LightGreen).with_attr(Attributes::BOLD),
-        ))
-        .with_highlighted_option_prefix(Styled::new("›").with_style_sheet(
-            StyleSheet::new().with_fg(Color::LightCyan).with_attr(Attributes::BOLD),
-        ))
+        .with_prompt_prefix(
+            Styled::new("?").with_style_sheet(
+                StyleSheet::new()
+                    .with_fg(Color::LightMagenta)
+                    .with_attr(Attributes::BOLD),
+            ),
+        )
+        .with_answered_prompt_prefix(
+            Styled::new("✓").with_style_sheet(
+                StyleSheet::new()
+                    .with_fg(Color::LightGreen)
+                    .with_attr(Attributes::BOLD),
+            ),
+        )
+        .with_highlighted_option_prefix(
+            Styled::new("›").with_style_sheet(
+                StyleSheet::new()
+                    .with_fg(Color::LightCyan)
+                    .with_attr(Attributes::BOLD),
+            ),
+        )
         .with_help_message(StyleSheet::new().with_fg(Color::DarkGrey))
         .with_text_input(StyleSheet::new().with_fg(Color::LightCyan))
-        .with_answer(StyleSheet::new().with_fg(Color::LightGreen).with_attr(Attributes::BOLD))
-        .with_scroll_up_prefix(Styled::new("↑").with_style_sheet(
-            StyleSheet::new().with_fg(Color::DarkGrey),
-        ))
-        .with_scroll_down_prefix(Styled::new("↓").with_style_sheet(
-            StyleSheet::new().with_fg(Color::DarkGrey),
-        ))
+        .with_answer(
+            StyleSheet::new()
+                .with_fg(Color::LightGreen)
+                .with_attr(Attributes::BOLD),
+        )
+        .with_scroll_up_prefix(
+            Styled::new("↑").with_style_sheet(StyleSheet::new().with_fg(Color::DarkGrey)),
+        )
+        .with_scroll_down_prefix(
+            Styled::new("↓").with_style_sheet(StyleSheet::new().with_fg(Color::DarkGrey)),
+        )
 }
 
 // --- Interactive mode ---
@@ -615,8 +654,11 @@ impl fmt::Display for FeatureChoice {
             format!("  [{}]", tags.join(", "))
         };
 
-        write!(f, "{} {}  {}{}{}",
-            sym, status_padded, title_padded, ticket, tags_str)
+        write!(
+            f,
+            "{} {}  {}{}{}",
+            sym, status_padded, title_padded, ticket, tags_str
+        )
     }
 }
 
@@ -637,7 +679,11 @@ impl fmt::Display for SessionChoice {
         } else {
             self.session.feature_title.clone()
         };
-        let feature_padded = format!("{:width$}", feature_title, width = self.max_feature_len.min(30));
+        let feature_padded = format!(
+            "{:width$}",
+            feature_title,
+            width = self.max_feature_len.min(30)
+        );
 
         // Session title
         let session_title = self.session.title.as_deref().unwrap_or("untitled");
@@ -649,7 +695,9 @@ impl fmt::Display for SessionChoice {
 
         // Relative time (right-aligned feel via padding)
         let time_str = format_relative_time(
-            self.session.ended_at.as_deref()
+            self.session
+                .ended_at
+                .as_deref()
                 .or(self.session.started_at.as_deref()),
         );
         let time_display = if time_str.is_empty() {
@@ -658,8 +706,11 @@ impl fmt::Display for SessionChoice {
             format!("  ({})", time_str)
         };
 
-        write!(f, "{}{}  {}{}",
-            indicator, feature_padded, session_display, time_display)
+        write!(
+            f,
+            "{}{}  {}{}",
+            indicator, feature_padded, session_display, time_display
+        )
     }
 }
 
@@ -723,7 +774,11 @@ fn cmd_interactive() -> Result<(), String> {
     println!();
     println!("  \x1b[1;35mFeatureHub\x1b[0m");
     if active_count > 0 {
-        println!("  \x1b[32m● {} session{} running\x1b[0m", active_count, if active_count == 1 { "" } else { "s" });
+        println!(
+            "  \x1b[32m● {} session{} running\x1b[0m",
+            active_count,
+            if active_count == 1 { "" } else { "s" }
+        );
     }
     println!();
 
@@ -754,11 +809,18 @@ fn interactive_start(
     features: Vec<db::features::FeatureSummary>,
     rc: RenderConfig<'static>,
 ) -> Result<(), String> {
-    let max_title_len = features.iter().map(|f| f.title.len().min(50)).max().unwrap_or(20);
+    let max_title_len = features
+        .iter()
+        .map(|f| f.title.len().min(50))
+        .max()
+        .unwrap_or(20);
 
     let choices: Vec<FeatureChoice> = features
         .into_iter()
-        .map(|feature| FeatureChoice { feature, max_title_len })
+        .map(|feature| FeatureChoice {
+            feature,
+            max_title_len,
+        })
         .collect();
 
     let selected = match Select::new("Select a feature:", choices)
@@ -831,7 +893,9 @@ fn interactive_resume(
         .prompt()
         {
             Ok(c) => c,
-            Err(InquireError::OperationCanceled | InquireError::OperationInterrupted) => return Ok(()),
+            Err(InquireError::OperationCanceled | InquireError::OperationInterrupted) => {
+                return Ok(())
+            }
             Err(e) => return Err(format!("Prompt error: {}", e)),
         };
         if confirm.starts_with("No") {
@@ -840,7 +904,10 @@ fn interactive_resume(
     }
 
     println!();
-    cmd_resume_session(&selected.session.claude_session_id, &selected.session.feature_id)
+    cmd_resume_session(
+        &selected.session.claude_session_id,
+        &selected.session.feature_id,
+    )
 }
 
 fn main() {

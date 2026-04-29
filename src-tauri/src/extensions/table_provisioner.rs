@@ -1,5 +1,5 @@
-use rusqlite::Connection;
 use crate::extensions::manifest::TableDecl;
+use rusqlite::Connection;
 
 /// Validate that a value is a safe SQL identifier: letters, digits, underscores only,
 /// must start with a letter or underscore.
@@ -113,15 +113,27 @@ pub fn provision_table(conn: &Connection, table: &TableDecl) -> Result<(), Strin
 mod tests {
     use super::*;
     use crate::db::test_utils::test_db;
-    use crate::extensions::manifest::{TableDecl, ColumnDecl};
+    use crate::extensions::manifest::{ColumnDecl, TableDecl};
 
     fn make_table(name: &str) -> TableDecl {
         TableDecl {
             name: name.to_string(),
             columns: vec![
-                ColumnDecl { name: "id".into(), col_type: "TEXT PRIMARY KEY".into(), fk: None },
-                ColumnDecl { name: "feature_id".into(), col_type: "TEXT NOT NULL".into(), fk: Some("features(id) ON DELETE CASCADE".into()) },
-                ColumnDecl { name: "title".into(), col_type: "TEXT NOT NULL".into(), fk: None },
+                ColumnDecl {
+                    name: "id".into(),
+                    col_type: "TEXT PRIMARY KEY".into(),
+                    fk: None,
+                },
+                ColumnDecl {
+                    name: "feature_id".into(),
+                    col_type: "TEXT NOT NULL".into(),
+                    fk: Some("features(id) ON DELETE CASCADE".into()),
+                },
+                ColumnDecl {
+                    name: "title".into(),
+                    col_type: "TEXT NOT NULL".into(),
+                    fk: None,
+                },
             ],
             indexes: vec!["feature_id".into()],
         }
@@ -133,11 +145,13 @@ mod tests {
         let table = make_table("ext_test_prs");
         provision_table(&conn, &table).unwrap();
 
-        let count: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ext_test_prs'",
-            [],
-            |r| r.get(0),
-        ).unwrap();
+        let count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ext_test_prs'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
         assert_eq!(count, 1);
 
         let idx_count: i64 = conn.query_row(
@@ -171,8 +185,16 @@ mod tests {
         let table_v1 = TableDecl {
             name: "ext_migration_test".into(),
             columns: vec![
-                ColumnDecl { name: "id".into(), col_type: "TEXT PRIMARY KEY".into(), fk: None },
-                ColumnDecl { name: "title".into(), col_type: "TEXT NOT NULL".into(), fk: None },
+                ColumnDecl {
+                    name: "id".into(),
+                    col_type: "TEXT PRIMARY KEY".into(),
+                    fk: None,
+                },
+                ColumnDecl {
+                    name: "title".into(),
+                    col_type: "TEXT NOT NULL".into(),
+                    fk: None,
+                },
             ],
             indexes: vec![],
         };
@@ -181,15 +203,28 @@ mod tests {
         let table_v2 = TableDecl {
             name: "ext_migration_test".into(),
             columns: vec![
-                ColumnDecl { name: "id".into(), col_type: "TEXT PRIMARY KEY".into(), fk: None },
-                ColumnDecl { name: "title".into(), col_type: "TEXT NOT NULL".into(), fk: None },
-                ColumnDecl { name: "status".into(), col_type: "TEXT NOT NULL DEFAULT 'open'".into(), fk: None },
+                ColumnDecl {
+                    name: "id".into(),
+                    col_type: "TEXT PRIMARY KEY".into(),
+                    fk: None,
+                },
+                ColumnDecl {
+                    name: "title".into(),
+                    col_type: "TEXT NOT NULL".into(),
+                    fk: None,
+                },
+                ColumnDecl {
+                    name: "status".into(),
+                    col_type: "TEXT NOT NULL DEFAULT 'open'".into(),
+                    fk: None,
+                },
             ],
             indexes: vec![],
         };
         provision_table(&conn, &table_v2).unwrap();
 
-        conn.execute_batch("SELECT status FROM ext_migration_test LIMIT 0").unwrap();
+        conn.execute_batch("SELECT status FROM ext_migration_test LIMIT 0")
+            .unwrap();
     }
 
     #[test]
@@ -197,17 +232,18 @@ mod tests {
         let conn = test_db();
         let table = TableDecl {
             name: "ext_safe".into(),
-            columns: vec![
-                ColumnDecl {
-                    name: "id) ; DROP TABLE features; --".into(),
-                    col_type: "TEXT".into(),
-                    fk: None,
-                },
-            ],
+            columns: vec![ColumnDecl {
+                name: "id) ; DROP TABLE features; --".into(),
+                col_type: "TEXT".into(),
+                fk: None,
+            }],
             indexes: vec![],
         };
         let result = provision_table(&conn, &table);
-        assert!(result.is_err(), "should reject column name with injection chars");
+        assert!(
+            result.is_err(),
+            "should reject column name with injection chars"
+        );
     }
 
     #[test]
@@ -215,13 +251,11 @@ mod tests {
         let conn = test_db();
         let table = TableDecl {
             name: "ext_safe2".into(),
-            columns: vec![
-                ColumnDecl {
-                    name: "id".into(),
-                    col_type: "TEXT); DROP TABLE features; --".into(),
-                    fk: None,
-                },
-            ],
+            columns: vec![ColumnDecl {
+                name: "id".into(),
+                col_type: "TEXT); DROP TABLE features; --".into(),
+                fk: None,
+            }],
             indexes: vec![],
         };
         let result = provision_table(&conn, &table);

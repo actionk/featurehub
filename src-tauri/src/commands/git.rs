@@ -14,23 +14,32 @@ pub struct GitStatusSummary {
 
 #[tauri::command]
 pub async fn get_git_current_branch(directory_path: String) -> Result<String, String> {
-    tauri::async_runtime::spawn_blocking(move || git::get_current_branch(Path::new(&directory_path)))
-        .await
-        .map_err(|e| e.to_string())?
+    tauri::async_runtime::spawn_blocking(move || {
+        git::get_current_branch(Path::new(&directory_path))
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
 pub async fn list_git_branches(directory_path: String) -> Result<Vec<String>, String> {
-    tauri::async_runtime::spawn_blocking(move || git::list_local_branches(Path::new(&directory_path)))
-        .await
-        .map_err(|e| e.to_string())?
+    tauri::async_runtime::spawn_blocking(move || {
+        git::list_local_branches(Path::new(&directory_path))
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub async fn checkout_git_branch(directory_path: String, branch_name: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || git::checkout_branch(Path::new(&directory_path), &branch_name))
-        .await
-        .map_err(|e| e.to_string())?
+pub async fn checkout_git_branch(
+    directory_path: String,
+    branch_name: String,
+) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        git::checkout_branch(Path::new(&directory_path), &branch_name)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -42,7 +51,14 @@ pub async fn get_git_status(directory_path: String) -> Result<GitStatusSummary, 
         let (ahead, behind) = git::get_ahead_behind(dir)
             .map(|(a, b)| (Some(a), Some(b)))
             .unwrap_or((None, None));
-        Ok(GitStatusSummary { branch, modified, untracked, staged, ahead, behind })
+        Ok(GitStatusSummary {
+            branch,
+            modified,
+            untracked,
+            staged,
+            ahead,
+            behind,
+        })
     })
     .await
     .map_err(|e| e.to_string())?

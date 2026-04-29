@@ -135,7 +135,11 @@ pub fn create_folder(
     })
 }
 
-pub fn rename_folder(conn: &Connection, id: &str, new_name: &str) -> Result<KnowledgeFolder, String> {
+pub fn rename_folder(
+    conn: &Connection,
+    id: &str,
+    new_name: &str,
+) -> Result<KnowledgeFolder, String> {
     if new_name.is_empty() {
         return Err("Folder name must not be empty".to_string());
     }
@@ -185,7 +189,8 @@ fn read_entry(row: &rusqlite::Row) -> rusqlite::Result<KnowledgeEntry> {
     })
 }
 
-const ENTRY_COLUMNS: &str = "id, folder_id, feature_id, title, description, content, sort_order, created_at, updated_at";
+const ENTRY_COLUMNS: &str =
+    "id, folder_id, feature_id, title, description, content, sort_order, created_at, updated_at";
 
 pub fn list_entries(conn: &Connection) -> Result<Vec<KnowledgeEntry>, String> {
     let mut stmt = conn
@@ -204,7 +209,10 @@ pub fn list_entries(conn: &Connection) -> Result<Vec<KnowledgeEntry>, String> {
     Ok(entries)
 }
 
-pub fn list_entries_in_folder(conn: &Connection, folder_id: Option<&str>) -> Result<Vec<KnowledgeEntry>, String> {
+pub fn list_entries_in_folder(
+    conn: &Connection,
+    folder_id: Option<&str>,
+) -> Result<Vec<KnowledgeEntry>, String> {
     if let Some(fid) = folder_id {
         let mut stmt = conn
             .prepare(&format!(
@@ -240,7 +248,10 @@ pub fn list_entries_in_folder(conn: &Connection, folder_id: Option<&str>) -> Res
 
 pub fn get_entry(conn: &Connection, id: &str) -> Result<KnowledgeEntry, String> {
     conn.query_row(
-        &format!("SELECT {} FROM knowledge_entries WHERE id = ?1", ENTRY_COLUMNS),
+        &format!(
+            "SELECT {} FROM knowledge_entries WHERE id = ?1",
+            ENTRY_COLUMNS
+        ),
         params![id],
         |row| read_entry(row),
     )
@@ -292,7 +303,15 @@ pub fn update_entry(
     conn.execute(
         "UPDATE knowledge_entries SET title = ?1, content = ?2, description = ?3,
          folder_id = ?4, feature_id = ?5, updated_at = ?6 WHERE id = ?7",
-        params![new_title, new_content, new_desc, new_folder_id, new_feature_id, now, id],
+        params![
+            new_title,
+            new_content,
+            new_desc,
+            new_folder_id,
+            new_feature_id,
+            now,
+            id
+        ],
     )
     .map_err(|e| e.to_string())?;
 

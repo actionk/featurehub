@@ -109,7 +109,10 @@ pub async fn clone_repository(
                 Err(ref e) => {
                     let _ = db::directories::update_clone_status(&conn, &dir_id, "failed", Some(e));
                     use tauri::Emitter;
-                    let _ = app_handle.emit("clone-failed", serde_json::json!({ "id": dir_id, "error": e }));
+                    let _ = app_handle.emit(
+                        "clone-failed",
+                        serde_json::json!({ "id": dir_id, "error": e }),
+                    );
                 }
             }
         }
@@ -176,7 +179,10 @@ pub async fn retry_clone(
                 Err(ref e) => {
                     let _ = db::directories::update_clone_status(&conn, &dir_id, "failed", Some(e));
                     use tauri::Emitter;
-                    let _ = app_handle.emit("clone-failed", serde_json::json!({ "id": dir_id, "error": e }));
+                    let _ = app_handle.emit(
+                        "clone-failed",
+                        serde_json::json!({ "id": dir_id, "error": e }),
+                    );
                 }
             }
         }

@@ -199,8 +199,8 @@ fn install_cli_windows(
     fh_mcp_name: &str,
 ) -> Result<CliInstallResult, String> {
     // Install to %LOCALAPPDATA%\Programs\FeatureHub\
-    let local_app_data = std::env::var("LOCALAPPDATA")
-        .map_err(|_| "Could not find LOCALAPPDATA directory")?;
+    let local_app_data =
+        std::env::var("LOCALAPPDATA").map_err(|_| "Could not find LOCALAPPDATA directory")?;
     let install_dir = std::path::PathBuf::from(&local_app_data)
         .join("Programs")
         .join("FeatureHub");

@@ -22,6 +22,7 @@ pub struct AppState {
     pub schedule_handles: Mutex<Vec<extensions::scheduler::ScheduleHandle>>,
     pub stats_cache: Mutex<std::collections::HashMap<String, claude::session_parser::CachedStats>>,
     pub jsonl_path_cache: Mutex<std::collections::HashMap<String, PathBuf>>,
+    pub status_hint_cache: Mutex<std::collections::HashMap<String, commands::CachedStatusHint>>,
 }
 
 pub fn spawn_extension_schedules(
@@ -67,55 +68,63 @@ pub fn run() {
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .setup(|app| {
             // Try to open the active storage's DB
-            let (conn, storage_path, extension_registry, schedule_handles) = match storage::get_active_storage(&app.handle()) {
-                Ok(Some(entry)) => {
-                    let path = PathBuf::from(&entry.path);
-                    let db_path = path.join("feature-hub.db");
-                    std::fs::create_dir_all(&path).ok();
-                    std::fs::create_dir_all(path.join("workspaces")).ok();
-                    let conn = rusqlite::Connection::open(&db_path)
-                        .expect("Failed to open database");
-                    db::initialize(&conn).expect("Failed to initialize database");
-                    db::migrate_to_relative_paths(&conn, &path);
-                    // Load extensions from both built-in (app resources) and user storage.
-                    // Storage extensions override built-in on id collision.
-                    let extension_registry = {
-                        let builtin_dir = builtin_extensions_dir(&app.handle());
-                        let storage_ext_dir = path.join("extensions");
-                        let dirs: Vec<&std::path::Path> = [
-                            builtin_dir.as_deref(),
-                            Some(storage_ext_dir.as_path()),
-                        ]
-                        .into_iter()
-                        .flatten()
-                        .collect();
-                        let registry = extensions::ExtensionRegistry::load_from_dirs(&dirs, Some(&path));
-                        let table_decls: Vec<_> = registry
-                            .extensions
-                            .iter()
-                            .flat_map(|e| &e.manifest.tables)
-                            .collect();
-                        for table in &table_decls {
-                            if let Err(e) = extensions::table_provisioner::provision_table(&conn, table) {
-                                eprintln!("[extensions] Table provisioning failed: {}", e);
+            let (conn, storage_path, extension_registry, schedule_handles) =
+                match storage::get_active_storage(&app.handle()) {
+                    Ok(Some(entry)) => {
+                        let path = PathBuf::from(&entry.path);
+                        let db_path = path.join("feature-hub.db");
+                        std::fs::create_dir_all(&path).ok();
+                        std::fs::create_dir_all(path.join("workspaces")).ok();
+                        let conn =
+                            rusqlite::Connection::open(&db_path).expect("Failed to open database");
+                        db::initialize(&conn).expect("Failed to initialize database");
+                        db::migrate_to_relative_paths(&conn, &path);
+                        // Load extensions from both built-in (app resources) and user storage.
+                        // Storage extensions override built-in on id collision.
+                        let extension_registry = {
+                            let builtin_dir = builtin_extensions_dir(&app.handle());
+                            let storage_ext_dir = path.join("extensions");
+                            let dirs: Vec<&std::path::Path> =
+                                [builtin_dir.as_deref(), Some(storage_ext_dir.as_path())]
+                                    .into_iter()
+                                    .flatten()
+                                    .collect();
+                            let registry =
+                                extensions::ExtensionRegistry::load_from_dirs(&dirs, Some(&path));
+                            let table_decls: Vec<_> = registry
+                                .extensions
+                                .iter()
+                                .flat_map(|e| &e.manifest.tables)
+                                .collect();
+                            for table in &table_decls {
+                                if let Err(e) =
+                                    extensions::table_provisioner::provision_table(&conn, table)
+                                {
+                                    eprintln!("[extensions] Table provisioning failed: {}", e);
+                                }
                             }
-                        }
-                        registry
-                    };
+                            registry
+                        };
 
-                    // Spawn schedules for loaded extensions.
-                    let schedule_handles = spawn_extension_schedules(&extension_registry, &path);
+                        // Spawn schedules for loaded extensions.
+                        let schedule_handles =
+                            spawn_extension_schedules(&extension_registry, &path);
 
-                    (conn, Some(path), extension_registry, schedule_handles)
-                }
-                _ => {
-                    // No active storage — open in-memory placeholder
-                    let conn = rusqlite::Connection::open_in_memory()
-                        .expect("Failed to open in-memory database");
-                    db::initialize(&conn).expect("Failed to initialize database");
-                    (conn, None, extensions::ExtensionRegistry::default(), Vec::new())
-                }
-            };
+                        (conn, Some(path), extension_registry, schedule_handles)
+                    }
+                    _ => {
+                        // No active storage — open in-memory placeholder
+                        let conn = rusqlite::Connection::open_in_memory()
+                            .expect("Failed to open in-memory database");
+                        db::initialize(&conn).expect("Failed to initialize database");
+                        (
+                            conn,
+                            None,
+                            extensions::ExtensionRegistry::default(),
+                            Vec::new(),
+                        )
+                    }
+                };
 
             let state = AppState {
                 db: Mutex::new(conn),
@@ -124,6 +133,7 @@ pub fn run() {
                 schedule_handles: Mutex::new(schedule_handles),
                 stats_cache: Mutex::new(std::collections::HashMap::new()),
                 jsonl_path_cache: Mutex::new(std::collections::HashMap::new()),
+                status_hint_cache: Mutex::new(std::collections::HashMap::new()),
             };
 
             app.manage(state);
@@ -134,16 +144,14 @@ pub fn run() {
             let handle = app.handle().clone();
             if let Some(window) = app.get_webview_window("main") {
                 let window_handle = window.clone();
-                window.on_window_event(move |event| {
-                    match event {
-                        WindowEvent::Moved(_) | WindowEvent::Resized(_) => {
-                            let _ = handle.save_window_state(StateFlags::all());
-                            if let Ok(maximized) = window_handle.is_maximized() {
-                                let _ = window_handle.emit("window-maximized", maximized);
-                            }
+                window.on_window_event(move |event| match event {
+                    WindowEvent::Moved(_) | WindowEvent::Resized(_) => {
+                        let _ = handle.save_window_state(StateFlags::all());
+                        if let Ok(maximized) = window_handle.is_maximized() {
+                            let _ = window_handle.emit("window-maximized", maximized);
                         }
-                        _ => {}
                     }
+                    _ => {}
                 });
             }
 
@@ -226,7 +234,6 @@ pub fn run() {
             commands::get_plan,
             commands::resolve_plan,
             commands::delete_plan,
-
             commands::get_note,
             commands::save_note,
             commands::get_context,
@@ -287,7 +294,6 @@ pub fn run() {
             commands::set_extension_settings,
             commands::invoke_extension_tool,
             commands::shell_open_url,
-
             commands::restart_extension_schedules,
         ])
         .run(tauri::generate_context!())
@@ -301,7 +307,9 @@ fn builtin_extensions_dir(app: &tauri::AppHandle) -> Option<PathBuf> {
     #[cfg(debug_assertions)]
     {
         let _ = app;
-        let repo_ext = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("extensions");
+        let repo_ext = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("extensions");
         if repo_ext.exists() {
             return Some(repo_ext);
         }
@@ -319,4 +327,3 @@ fn builtin_extensions_dir(app: &tauri::AppHandle) -> Option<PathBuf> {
         }
     }
 }
-

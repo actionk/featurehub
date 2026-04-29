@@ -10,10 +10,12 @@
   import { setToolbarActions, clearToolbarActions } from "../../stores/tabToolbar.svelte";
   import { onDestroy } from "svelte";
   import { listen } from "@tauri-apps/api/event";
+  import { createLatestGuard, createPollingGate } from "../../utils/asyncGuards";
 
   let {
     featureId,
     onOpenSettings,
+    isTabActive = true,
   }: TabContext = $props();
 
   let directories = $state<Directory[]>([]);
@@ -25,6 +27,8 @@
   // Git status per directory
   let statusByDir = $state<Record<string, GitStatusSummary>>({});
   let loadingGitStatus = $state<Set<string>>(new Set());
+  const dataGuard = createLatestGuard();
+  const gitStatusGate = createPollingGate();
 
   // Add repo form
   let showAddForm = $state(false);
@@ -74,10 +78,15 @@
 
   $effect(() => {
     const id = featureId;
+    if (!isTabActive) {
+      dataGuard.invalidate();
+      return;
+    }
     loadData(id, true);
   });
 
   $effect(() => {
+    if (!isTabActive) return;
     const unlistenComplete = listen<string>("clone-complete", () => refresh());
     const unlistenFailed = listen<any>("clone-failed", () => refresh());
     return () => {
@@ -88,6 +97,7 @@
 
   // Poll git status every 10s to catch external branch/file changes
   $effect(() => {
+    if (!isTabActive) return;
     const interval = setInterval(() => {
       if (directories.length > 0) refreshGitStatuses();
     }, 10_000);
@@ -95,6 +105,7 @@
   });
 
   async function loadData(fid: string, showLoading = false) {
+    const token = dataGuard.next();
     if (showLoading) loading = true;
     try {
       // Phase 1: fast — get feature + settings (show UI immediately)
@@ -102,6 +113,7 @@
         getFeature(fid),
         getCachedSettings(),
       ]);
+      if (!dataGuard.isCurrent(token) || fid !== featureId || !isTabActive) return;
       directories = feat.directories ?? [];
       defaultRepos = settings.default_repositories ?? [];
       loading = false;
@@ -109,6 +121,7 @@
       // Phase 2: async — detect IDEs (only once) and git statuses (can be slow)
       if (!idesDetected) {
         detectIdes().then((ides) => {
+          if (!dataGuard.isCurrent(token) || fid !== featureId) return;
           const preferred: string[] = settings.preferred_ides ?? [];
           installedIdes = preferred.length > 0
             ? ides.filter((ide: DetectedIde) => preferred.includes(ide.id))
@@ -120,25 +133,36 @@
       refreshGitStatuses(true);
     } catch (e) {
       console.error("Failed to load config:", e);
-      loading = false;
+      if (dataGuard.isCurrent(token) && fid === featureId) {
+        loading = false;
+      }
     }
   }
 
   function refreshGitStatuses(showLoading = false) {
+    if (!isTabActive) return;
+    const fid = featureId;
     const readyDirs = directories.filter(d => d.clone_status === "ready" || !d.clone_status);
-    if (showLoading) {
-      statusByDir = {};
-      loadingGitStatus = new Set(readyDirs.map(d => d.id));
-    }
-    for (const dir of readyDirs) {
-      getGitStatus(dir.path).then((status) => {
-        statusByDir = { ...statusByDir, [dir.id]: status };
-      }).catch(() => { /* not a git repo */ }).finally(() => {
-        const next = new Set(loadingGitStatus);
-        next.delete(dir.id);
-        loadingGitStatus = next;
-      });
-    }
+    void gitStatusGate.run(async () => {
+      if (showLoading) {
+        statusByDir = {};
+        loadingGitStatus = new Set(readyDirs.map(d => d.id));
+      }
+      await Promise.all(readyDirs.map(async (dir) => {
+        try {
+          const status = await getGitStatus(dir.path);
+          if (fid !== featureId || !isTabActive) return;
+          statusByDir = { ...statusByDir, [dir.id]: status };
+        } catch {
+          // not a git repo
+        } finally {
+          if (fid !== featureId || !isTabActive) return;
+          const next = new Set(loadingGitStatus);
+          next.delete(dir.id);
+          loadingGitStatus = next;
+        }
+      }));
+    });
   }
 
   async function refresh() {

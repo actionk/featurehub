@@ -25,14 +25,18 @@ pub fn accept_dirs(dirs: &[&str]) {
         root = serde_json::json!({});
     }
 
-    let Some(root_obj) = root.as_object_mut() else { return };
+    let Some(root_obj) = root.as_object_mut() else {
+        return;
+    };
     let projects = root_obj
         .entry("projects")
         .or_insert_with(|| serde_json::json!({}));
     if !projects.is_object() {
         *projects = serde_json::json!({});
     }
-    let Some(projects_obj) = projects.as_object_mut() else { return };
+    let Some(projects_obj) = projects.as_object_mut() else {
+        return;
+    };
 
     let mut changed = false;
     for dir in dirs {
@@ -43,13 +47,18 @@ pub fn accept_dirs(dirs: &[&str]) {
         if !entry.is_object() {
             *entry = serde_json::json!({});
         }
-        let Some(obj) = entry.as_object_mut() else { continue };
+        let Some(obj) = entry.as_object_mut() else {
+            continue;
+        };
         let already = obj
             .get("hasTrustDialogAccepted")
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
         if !already {
-            obj.insert("hasTrustDialogAccepted".to_string(), serde_json::json!(true));
+            obj.insert(
+                "hasTrustDialogAccepted".to_string(),
+                serde_json::json!(true),
+            );
             changed = true;
         }
     }

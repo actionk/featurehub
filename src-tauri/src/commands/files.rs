@@ -23,7 +23,10 @@ pub fn add_files(
     let (base, subfolder) = {
         let conn = state.db.lock().map_err(|e| e.to_string())?;
         let storage = state.storage_path.lock().map_err(|e| e.to_string())?;
-        let base = storage.as_deref().ok_or("No active storage path")?.to_path_buf();
+        let base = storage
+            .as_deref()
+            .ok_or("No active storage path")?
+            .to_path_buf();
         let subfolder = match &folder_id {
             Some(fid) => Some(db::folders::get_folder_path(&conn, fid)?),
             None => None,
@@ -34,8 +37,12 @@ pub fn add_files(
     // Copy files to storage (disk I/O without holding locks)
     let mut copied = Vec::new();
     for source_path in &paths {
-        let (filename, dest_path, size) =
-            file_manager::copy_file_to_storage(&base, &feature_id, source_path, subfolder.as_deref())?;
+        let (filename, dest_path, size) = file_manager::copy_file_to_storage(
+            &base,
+            &feature_id,
+            source_path,
+            subfolder.as_deref(),
+        )?;
         copied.push((filename, source_path.clone(), dest_path, size));
     }
 
@@ -43,7 +50,15 @@ pub fn add_files(
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     let mut entries = Vec::new();
     for (filename, source_path, dest_path, size) in &copied {
-        let entry = db::files::add_file(&conn, &feature_id, filename, source_path, dest_path, *size, folder_id.as_deref())?;
+        let entry = db::files::add_file(
+            &conn,
+            &feature_id,
+            filename,
+            source_path,
+            dest_path,
+            *size,
+            folder_id.as_deref(),
+        )?;
         entries.push(entry);
     }
 
@@ -101,10 +116,7 @@ pub fn get_files_directory(
 }
 
 #[tauri::command]
-pub fn open_files_directory(
-    state: State<'_, AppState>,
-    feature_id: String,
-) -> Result<(), String> {
+pub fn open_files_directory(state: State<'_, AppState>, feature_id: String) -> Result<(), String> {
     let storage = state.storage_path.lock().map_err(|e| e.to_string())?;
     let base = storage.as_deref().ok_or("No active storage path")?;
     let dir = file_manager::get_storage_path(base, &feature_id);

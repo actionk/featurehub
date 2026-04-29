@@ -48,7 +48,8 @@ pub fn get_tasks(conn: &Connection, feature_id: &str) -> Result<Vec<Task>, Strin
         .query_map(params![feature_id], |row| row_to_task(row))
         .map_err(|e| e.to_string())?;
 
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
 }
 
 pub fn create_task(
@@ -103,11 +104,16 @@ pub fn create_task(
 
     // Return the task (may be the upserted one for external tasks)
     if let Some(ext_key) = external_key {
-        let task = conn.query_row(
-            &format!("SELECT {} FROM tasks WHERE feature_id = ?1 AND external_key = ?2", SELECT_COLS),
-            params![feature_id, ext_key],
-            |row| row_to_task(row),
-        ).map_err(|e| e.to_string())?;
+        let task = conn
+            .query_row(
+                &format!(
+                    "SELECT {} FROM tasks WHERE feature_id = ?1 AND external_key = ?2",
+                    SELECT_COLS
+                ),
+                params![feature_id, ext_key],
+                |row| row_to_task(row),
+            )
+            .map_err(|e| e.to_string())?;
         Ok(task)
     } else {
         Ok(Task {
@@ -166,7 +172,8 @@ pub fn update_task(
         );
         param_values.push(Box::new(id.to_string()));
 
-        let params_refs: Vec<&dyn rusqlite::types::ToSql> = param_values.iter().map(|v| v.as_ref()).collect();
+        let params_refs: Vec<&dyn rusqlite::types::ToSql> =
+            param_values.iter().map(|v| v.as_ref()).collect();
         conn.execute(&query, params_refs.as_slice())
             .map_err(|e| e.to_string())?;
     }
@@ -206,8 +213,8 @@ pub fn delete_task(conn: &Connection, id: &str) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::test_utils::test_db;
     use crate::db::features::create_feature;
+    use crate::db::test_utils::test_db;
 
     fn setup() -> (rusqlite::Connection, String) {
         let conn = test_db();
@@ -219,7 +226,8 @@ mod tests {
     #[test]
     fn create_task_returns_task_with_defaults() {
         let (conn, feature_id) = setup();
-        let task = create_task(&conn, &feature_id, "My Task", None, None, None, None, None).unwrap();
+        let task =
+            create_task(&conn, &feature_id, "My Task", None, None, None, None, None).unwrap();
 
         assert_eq!(task.title, "My Task");
         assert_eq!(task.feature_id, feature_id);
@@ -240,7 +248,8 @@ mod tests {
     #[test]
     fn update_task_marks_done() {
         let (conn, feature_id) = setup();
-        let task = create_task(&conn, &feature_id, "Do This", None, None, None, None, None).unwrap();
+        let task =
+            create_task(&conn, &feature_id, "Do This", None, None, None, None, None).unwrap();
 
         let updated = update_task(&conn, &task.id, None, Some(true), None, None).unwrap();
         assert!(updated.done);
@@ -249,7 +258,17 @@ mod tests {
     #[test]
     fn delete_task_removes_it() {
         let (conn, feature_id) = setup();
-        let task = create_task(&conn, &feature_id, "Remove Me", None, None, None, None, None).unwrap();
+        let task = create_task(
+            &conn,
+            &feature_id,
+            "Remove Me",
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
 
         delete_task(&conn, &task.id).unwrap();
         let tasks = get_tasks(&conn, &feature_id).unwrap();

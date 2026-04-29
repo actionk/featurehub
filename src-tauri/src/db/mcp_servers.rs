@@ -23,7 +23,8 @@ pub fn get_feature_mcp_servers(
             })
         })
         .map_err(|e| e.to_string())?;
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
 }
 
 /// Set whether a specific MCP server is enabled for a feature (upsert).
@@ -58,11 +59,9 @@ pub fn resolve_servers_for_feature(
 
     Ok(all_servers
         .iter()
-        .filter(|s| {
-            match override_map.get(s.name.as_str()) {
-                Some(&enabled) => enabled,
-                None => s.default_enabled,
-            }
+        .filter(|s| match override_map.get(s.name.as_str()) {
+            Some(&enabled) => enabled,
+            None => s.default_enabled,
         })
         .cloned()
         .collect())

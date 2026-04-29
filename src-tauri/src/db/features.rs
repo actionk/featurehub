@@ -3,9 +3,9 @@ use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use super::directories::Directory;
 use super::links::Link;
 use super::tags::Tag;
-use super::directories::Directory;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Feature {
@@ -135,7 +135,8 @@ pub fn get_features(
             })
             .map_err(|e| e.to_string())?;
 
-        let mut tag_map: std::collections::HashMap<String, Vec<Tag>> = std::collections::HashMap::new();
+        let mut tag_map: std::collections::HashMap<String, Vec<Tag>> =
+            std::collections::HashMap::new();
         for row in tag_rows {
             let (feature_id, tag) = row.map_err(|e| e.to_string())?;
             tag_map.entry(feature_id).or_default().push(tag);
@@ -165,7 +166,8 @@ pub fn get_features(
             })
             .map_err(|e| e.to_string())?;
 
-        let mut task_count_map: std::collections::HashMap<String, (i32, i32)> = std::collections::HashMap::new();
+        let mut task_count_map: std::collections::HashMap<String, (i32, i32)> =
+            std::collections::HashMap::new();
         for row in task_rows {
             let (feature_id, total, done) = row.map_err(|e| e.to_string())?;
             task_count_map.insert(feature_id, (total, done));
@@ -207,7 +209,10 @@ fn get_feature_tags(conn: &Connection, feature_id: &str) -> Result<Vec<Tag>, Str
 }
 
 /// Get direct children of a feature (lightweight — returns id and title only).
-pub fn get_feature_children(conn: &Connection, parent_id: &str) -> Result<Vec<(String, String)>, String> {
+pub fn get_feature_children(
+    conn: &Connection,
+    parent_id: &str,
+) -> Result<Vec<(String, String)>, String> {
     let mut stmt = conn
         .prepare("SELECT id, title FROM features WHERE parent_id = ?1 ORDER BY sort_order")
         .map_err(|e| e.to_string())?;
@@ -218,7 +223,8 @@ pub fn get_feature_children(conn: &Connection, parent_id: &str) -> Result<Vec<(S
         })
         .map_err(|e| e.to_string())?;
 
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
 }
 
 pub fn get_feature(conn: &Connection, id: &str) -> Result<Feature, String> {
@@ -439,9 +445,14 @@ pub fn set_archived(conn: &Connection, id: &str, archived: bool) -> Result<Featu
     get_feature(conn, id)
 }
 
-pub fn duplicate_feature(conn: &Connection, id: &str, storage_base: Option<&std::path::Path>) -> Result<Feature, String> {
+pub fn duplicate_feature(
+    conn: &Connection,
+    id: &str,
+    storage_base: Option<&std::path::Path>,
+) -> Result<Feature, String> {
     // Wrap entire duplication in a transaction to prevent partial copies on failure
-    conn.execute_batch("BEGIN TRANSACTION").map_err(|e| e.to_string())?;
+    conn.execute_batch("BEGIN TRANSACTION")
+        .map_err(|e| e.to_string())?;
 
     match duplicate_feature_inner(conn, id, storage_base) {
         Ok(feature) => {
@@ -455,15 +466,21 @@ pub fn duplicate_feature(conn: &Connection, id: &str, storage_base: Option<&std:
     }
 }
 
-fn duplicate_feature_inner(conn: &Connection, id: &str, storage_base: Option<&std::path::Path>) -> Result<Feature, String> {
+fn duplicate_feature_inner(
+    conn: &Connection,
+    id: &str,
+    storage_base: Option<&std::path::Path>,
+) -> Result<Feature, String> {
     let source = get_feature(conn, id)?;
     let new_id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
 
     let max_sort: i64 = conn
-        .query_row("SELECT COALESCE(MAX(sort_order), -1) FROM features", [], |row| {
-            row.get(0)
-        })
+        .query_row(
+            "SELECT COALESCE(MAX(sort_order), -1) FROM features",
+            [],
+            |row| row.get(0),
+        )
         .map_err(|e| e.to_string())?;
 
     let new_title = format!("{} (copy)", source.title);
@@ -493,7 +510,15 @@ fn duplicate_feature_inner(conn: &Connection, id: &str, storage_base: Option<&st
         conn.execute(
             "INSERT INTO links (id, feature_id, title, url, link_type, description, created_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![link_id, new_id, link.title, link.url, link.link_type, link.description, now],
+            params![
+                link_id,
+                new_id,
+                link.title,
+                link.url,
+                link.link_type,
+                link.description,
+                now
+            ],
         )
         .map_err(|e| e.to_string())?;
     }
@@ -547,25 +572,28 @@ fn duplicate_feature_inner(conn: &Connection, id: &str, storage_base: Option<&st
 
     // Copy folders (preserving hierarchy via old->new ID mapping)
     let source_folders = super::folders::get_folders(conn, id)?;
-    let mut folder_id_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+    let mut folder_id_map: std::collections::HashMap<String, String> =
+        std::collections::HashMap::new();
 
     // Sort folders so parents are created before children
     // Process folders with no parent first, then children
     let mut remaining = source_folders.clone();
     let mut ordered_folders = Vec::new();
     while !remaining.is_empty() {
-        let (ready, not_ready): (Vec<_>, Vec<_>) = remaining.into_iter().partition(|f| {
-            match &f.parent_id {
+        let (ready, not_ready): (Vec<_>, Vec<_>) =
+            remaining.into_iter().partition(|f| match &f.parent_id {
                 None => true,
                 Some(pid) => folder_id_map.contains_key(pid),
-            }
-        });
+            });
         if ready.is_empty() {
             break; // prevent infinite loop on broken data
         }
         for folder in &ready {
             let new_folder_id = Uuid::new_v4().to_string();
-            let new_parent_id = folder.parent_id.as_ref().and_then(|pid| folder_id_map.get(pid));
+            let new_parent_id = folder
+                .parent_id
+                .as_ref()
+                .and_then(|pid| folder_id_map.get(pid));
             conn.execute(
                 "INSERT INTO folders (id, feature_id, parent_id, name, created_at)
                  VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -582,17 +610,20 @@ fn duplicate_feature_inner(conn: &Connection, id: &str, storage_base: Option<&st
     if let Some(base_path) = storage_base {
         let source_files = super::files::get_files(conn, id)?;
         for file in &source_files {
-            let new_folder_id = file.folder_id.as_ref().and_then(|fid| folder_id_map.get(fid));
+            let new_folder_id = file
+                .folder_id
+                .as_ref()
+                .and_then(|fid| folder_id_map.get(fid));
 
             // Build subfolder path for the new file
-            let subfolder = new_folder_id.and_then(|nfid| {
-                super::folders::get_folder_path(conn, nfid).ok()
-            });
+            let subfolder =
+                new_folder_id.and_then(|nfid| super::folders::get_folder_path(conn, nfid).ok());
 
             // Copy file on disk
             let source_stored = std::path::PathBuf::from(&file.stored_path);
             if source_stored.exists() {
-                let new_storage_dir = crate::files::manager::ensure_storage_dir(base_path, &new_id)?;
+                let new_storage_dir =
+                    crate::files::manager::ensure_storage_dir(base_path, &new_id)?;
                 let target_dir = if let Some(ref sub) = subfolder {
                     let dir = new_storage_dir.join(sub);
                     std::fs::create_dir_all(&dir)
@@ -629,7 +660,11 @@ fn duplicate_feature_inner(conn: &Connection, id: &str, storage_base: Option<&st
                     .map_err(|e| format!("Failed to copy file: {}", e))?;
 
                 let new_stored_path = dest_path.to_string_lossy().to_string();
-                let new_filename = dest_path.file_name().unwrap_or_default().to_string_lossy().to_string();
+                let new_filename = dest_path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
                 let file_id = Uuid::new_v4().to_string();
                 conn.execute(
                     "INSERT INTO files (id, feature_id, filename, original_path, stored_path, size, folder_id, created_at)
@@ -659,7 +694,11 @@ fn duplicate_feature_inner(conn: &Connection, id: &str, storage_base: Option<&st
 }
 
 /// Check if setting `proposed_parent_id` as parent of `feature_id` would create a cycle.
-fn would_create_cycle(conn: &Connection, feature_id: &str, proposed_parent_id: &str) -> Result<bool, String> {
+fn would_create_cycle(
+    conn: &Connection,
+    feature_id: &str,
+    proposed_parent_id: &str,
+) -> Result<bool, String> {
     if feature_id == proposed_parent_id {
         return Ok(true);
     }
@@ -763,9 +802,15 @@ mod tests {
         let conn = test_db();
         let created = create_feature(&conn, "Original", None, None, None, None).unwrap();
         let updated = update_feature(
-            &conn, &created.id,
-            Some("Renamed".to_string()), None, None, None, None,
-        ).unwrap();
+            &conn,
+            &created.id,
+            Some("Renamed".to_string()),
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
 
         assert_eq!(updated.title, "Renamed");
     }
