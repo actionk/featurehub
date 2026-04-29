@@ -5,7 +5,7 @@
   import { formatRelativeTime } from "../utils/format";
   import { getTerminalSidebarStatus } from "../utils/terminalStatus";
   import { getActiveTerminals, getViewingTerminal, requestShowOverview } from "../stores/terminals.svelte";
-  import { getActiveCountForFeature, isAnySessionWaitingForFeature } from "../stores/sessionActivity.svelte";
+  import { getActiveCountForFeature, getPanelSessions, isAnySessionWaitingForFeature } from "../stores/sessionActivity.svelte";
 
   let {
     features,
@@ -45,6 +45,13 @@
 
   let activeTerminals = $derived(getActiveTerminals());
   let viewingTerminalId = $derived(getViewingTerminal());
+  let panelSessionsById = $derived.by(() => {
+    const map = new Map<string, ReturnType<typeof getPanelSessions>[number]>();
+    for (const session of getPanelSessions()) {
+      map.set(session.id, session);
+    }
+    return map;
+  });
 
   // Group terminals by feature for inline rendering
   let terminalsByFeature = $derived.by(() => {
@@ -976,10 +983,11 @@
                   <div class="sub-list">
                     {#each sessions as term (term.terminalId)}
                       {@const isViewing = viewingTerminalId === term.terminalId && selectedId === feature.id}
+                      {@const parsedSession = panelSessionsById.get(term.sessionDbId)}
                       <!-- svelte-ignore a11y_no_static_element_interactions -->
                       <div
                         class="sub-session"
-                        class:sub-session--waiting={term.needsInput && !isViewing}
+                        class:sub-session--waiting={(term.needsInput || parsedSession?.status === 'WaitingForInput') && !isViewing}
                         class:sub-session--viewing={isViewing}
                         class:sub-session--exited={term.exited}
                         role="button"
@@ -993,10 +1001,14 @@
                       >
                         <span class="sub-session__dot"></span>
                         <span class="sub-session__label">{term.label}</span>
-                        {#if term.needsInput}
+                        {#if term.needsInput || parsedSession?.status === 'WaitingForInput'}
                           <span class="aurora-pill aurora-pill--warn aurora-pill--sm aurora-pill--no-dot">Waiting</span>
                         {:else}
-                          <span class="sub-session__meta">{getTerminalSidebarStatus(term)}</span>
+                          <span class="sub-session__meta">{getTerminalSidebarStatus({
+                            ...term,
+                            status: parsedSession?.status,
+                            lastAction: parsedSession?.last_action,
+                          })}</span>
                         {/if}
                         <button
                           class="sub-session__finish"

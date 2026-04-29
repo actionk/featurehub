@@ -3,6 +3,7 @@ import { fireEvent, render, waitFor } from '@testing-library/svelte';
 import AiPanel from './AiPanel.svelte';
 import type { TabContext } from '../registry';
 import { ptyResumeSession } from '../../api/tauri';
+import { getActiveTerminals, getTerminalsForFeature, setViewingTerminal } from '../../stores/terminals.svelte';
 
 // Mock Chart.js so canvas effects don't blow up in jsdom
 vi.mock('chart.js', () => {
@@ -118,10 +119,34 @@ function makeContext(overrides: Partial<TabContext> = {}): TabContext {
 
 describe('AiPanel sessions card', () => {
   beforeEach(() => {
+    vi.mocked(getTerminalsForFeature).mockReturnValue([]);
+    vi.mocked(getActiveTerminals).mockReturnValue([]);
+    vi.mocked(setViewingTerminal).mockClear();
     vi.mocked(ptyResumeSession).mockResolvedValue({
       terminalId: 'term-1',
       sessionDbId: 's1',
       claudeSessionId: 'claude-1',
+    });
+  });
+
+  it('focuses a restored live embedded terminal for the feature', async () => {
+    vi.mocked(getTerminalsForFeature).mockReturnValue([
+      {
+        terminalId: 'term-1',
+        sessionDbId: 's1',
+        featureId: 'feat-1',
+        featureTitle: 'Test Feature',
+        label: 'Restored Session',
+        exited: false,
+        statusLine: '',
+        needsInput: false,
+      },
+    ]);
+
+    render(AiPanel, { props: makeContext({ sessions: [] }) });
+
+    await waitFor(() => {
+      expect(setViewingTerminal).toHaveBeenCalledWith('term-1');
     });
   });
 

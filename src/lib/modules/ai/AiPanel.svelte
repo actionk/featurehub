@@ -38,6 +38,7 @@
   let pendingPlanCount = $derived(pendingPlans.length);
 
   let activeTerminalId = $state<string | null>(null);
+  let suppressTerminalAutoFocus = $state(false);
   let launching = $state(false);
   let preferredIdeList = $state<DetectedIde[]>([]);
   // Map claude_session_id → last_activity from JSONL mtime (more accurate than DB started_at)
@@ -458,10 +459,12 @@
     if (req.version === lastViewVersion) return;
     if (req.isClear) {
       lastViewVersion = req.version;
+      suppressTerminalAutoFocus = true;
       activeTerminalId = null;
     } else if (req.terminalId) {
       if (terms.some(t => t.terminalId === req.terminalId)) {
         lastViewVersion = req.version;
+        suppressTerminalAutoFocus = false;
         activeTerminalId = req.terminalId;
       }
       // Don't update lastViewVersion if terminal not found yet —
@@ -473,6 +476,15 @@
   $effect(() => {
     if (activeTerminalId && !featureTerminals.some(t => t.terminalId === activeTerminalId)) {
       activeTerminalId = null;
+    }
+  });
+
+  // If a live embedded terminal is restored while this panel is reopened, make it active.
+  $effect(() => {
+    if (activeTerminalId || suppressTerminalAutoFocus) return;
+    const liveTerminal = featureTerminals.findLast(t => !t.exited);
+    if (liveTerminal) {
+      activeTerminalId = liveTerminal.terminalId;
     }
   });
 
@@ -530,6 +542,7 @@
         label: `Session ${idx}`,
         exited: false,
       });
+      suppressTerminalAutoFocus = false;
       activeTerminalId = result.terminalId;
       onSessionsChanged();
 
@@ -646,6 +659,7 @@
     // If terminal already open for this session, just switch to it
     const existing = findTerminalForSession(session.id);
     if (existing) {
+      suppressTerminalAutoFocus = false;
       activeTerminalId = existing.terminalId;
       return;
     }
@@ -661,6 +675,7 @@
         label: title,
         exited: false,
       });
+      suppressTerminalAutoFocus = false;
       activeTerminalId = result.terminalId;
     } catch (e) {
       console.error("Failed to resume session:", e);
@@ -700,11 +715,13 @@
   }
 
   function showOverview() {
+    suppressTerminalAutoFocus = true;
     activeTerminalId = null;
     sidePlan = null;
   }
 
   function viewTerminal(terminalId: string) {
+    suppressTerminalAutoFocus = false;
     activeTerminalId = terminalId;
   }
 
@@ -742,10 +759,10 @@
     {#each featureTerminals as term (term.terminalId)}
       <div
         class="terminal-tab {activeTerminalId === term.terminalId ? 'terminal-tab--active' : ''} {term.exited ? 'terminal-tab--exited' : ''}"
-        onclick={() => (activeTerminalId = term.terminalId)}
+        onclick={() => viewTerminal(term.terminalId)}
         role="tab"
         tabindex="0"
-        onkeydown={(e) => { if (e.key === 'Enter') activeTerminalId = term.terminalId; }}
+        onkeydown={(e) => { if (e.key === 'Enter') viewTerminal(term.terminalId); }}
       >
         <span class="terminal-tab-dot {term.exited ? '' : 'terminal-tab-dot--live'}"></span>
         <span>{term.label}</span>
