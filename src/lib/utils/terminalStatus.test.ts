@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { getTerminalSidebarStatus } from "./terminalStatus";
+import { getTerminalSidebarStatus, getTerminalSidebarTitle } from "./terminalStatus";
 
 describe("getTerminalSidebarStatus", () => {
   test("shows waiting when the terminal needs input", () => {
@@ -10,14 +10,24 @@ describe("getTerminalSidebarStatus", () => {
     expect(getTerminalSidebarStatus({ exited: true, needsInput: false })).toBe("Exited");
   });
 
-  test("shows running instead of raw PTY status text", () => {
+  test("hides raw PTY status text instead of showing fake activity", () => {
     expect(
       getTerminalSidebarStatus({
         exited: false,
         needsInput: false,
         statusLine: "----------------------------------------",
       }),
-    ).toBe("Running");
+    ).toBeNull();
+  });
+
+  test("hides generic running when there is no concrete action", () => {
+    expect(
+      getTerminalSidebarStatus({
+        exited: false,
+        needsInput: false,
+        statusLine: "Running",
+      }),
+    ).toBeNull();
   });
 
   test("shows meaningful Claude action status lines", () => {
@@ -58,6 +68,34 @@ describe("getTerminalSidebarStatus", () => {
         needsInput: false,
         statusLine: "Claude Code v2.1.123",
       }),
-    ).toBe("Running");
+    ).toBeNull();
+  });
+});
+
+describe("getTerminalSidebarTitle", () => {
+  test("prefers parsed transcript title over terminal OSC label", () => {
+    expect(
+      getTerminalSidebarTitle({
+        label: "Claude Code - Status",
+        parsedTitle: "Fix sidebar session status",
+      }),
+    ).toBe("Fix sidebar session status");
+  });
+
+  test("hides generic Claude Code terminal titles", () => {
+    expect(
+      getTerminalSidebarTitle({
+        label: "Claude Code - Status",
+        featureTitle: "Move permissions",
+      }),
+    ).toBe("Move permissions");
+  });
+
+  test("keeps explicit resumed session labels as fallback", () => {
+    expect(
+      getTerminalSidebarTitle({
+        label: "Investigate transcript parser",
+      }),
+    ).toBe("Investigate transcript parser");
   });
 });

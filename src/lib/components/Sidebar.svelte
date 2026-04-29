@@ -3,7 +3,7 @@
   import { duplicateFeature, togglePinFeature, setFeatureArchived, updateFeature, deleteFeature, setFeatureParent, reorderFeatures, createFeatureGroup, updateFeatureGroup, deleteFeatureGroup, reorderFeatureGroups, setFeatureGroup, updateStorageIcon, getStorages } from "../api/tauri";
   import StorageSelector from "./StorageSelector.svelte";
   import { formatRelativeTime } from "../utils/format";
-  import { getTerminalSidebarStatus } from "../utils/terminalStatus";
+  import { getTerminalSidebarStatus, getTerminalSidebarTitle } from "../utils/terminalStatus";
   import { getActiveTerminals, getViewingTerminal, requestShowOverview } from "../stores/terminals.svelte";
   import { getActiveCountForFeature, getPanelSessions, isAnySessionWaitingForFeature } from "../stores/sessionActivity.svelte";
 
@@ -984,6 +984,11 @@
                     {#each sessions as term (term.terminalId)}
                       {@const isViewing = viewingTerminalId === term.terminalId && selectedId === feature.id}
                       {@const parsedSession = panelSessionsById.get(term.sessionDbId)}
+                      {@const sidebarStatus = getTerminalSidebarStatus({
+                        ...term,
+                        status: parsedSession?.status,
+                        lastAction: parsedSession?.last_action,
+                      })}
                       <!-- svelte-ignore a11y_no_static_element_interactions -->
                       <div
                         class="sub-session"
@@ -1000,15 +1005,15 @@
                         onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onSelectTerminal?.(term.featureId, term.terminalId); } }}
                       >
                         <span class="sub-session__dot"></span>
-                        <span class="sub-session__label">{term.label}</span>
+                        <span class="sub-session__label">{getTerminalSidebarTitle({
+                          label: term.label,
+                          parsedTitle: parsedSession?.title,
+                          featureTitle: feature.title,
+                        })}</span>
                         {#if term.needsInput || parsedSession?.status === 'WaitingForInput'}
                           <span class="aurora-pill aurora-pill--warn aurora-pill--sm aurora-pill--no-dot">Waiting</span>
-                        {:else}
-                          <span class="sub-session__meta">{getTerminalSidebarStatus({
-                            ...term,
-                            status: parsedSession?.status,
-                            lastAction: parsedSession?.last_action,
-                          })}</span>
+                        {:else if sidebarStatus}
+                          <span class="sub-session__meta">{sidebarStatus}</span>
                         {/if}
                         <button
                           class="sub-session__finish"

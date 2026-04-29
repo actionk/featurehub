@@ -273,8 +273,8 @@
     term.registerLinkProvider(filePathProvider);
 
     term.onTitleChange((title) => {
-      // Ignore generic titles that Claude Code sends via OSC sequences
-      if (title && title !== "Claude Code") {
+      // Ignore generic titles that Claude Code sends via OSC sequences.
+      if (title && !/^Claude Code\b/i.test(title.trim())) {
         updateLabel(terminalId, title);
       }
     });
@@ -490,4 +490,3 @@
     margin-left: 2px;
   }
 </style>
-

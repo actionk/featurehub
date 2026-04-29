@@ -6,8 +6,15 @@ export interface TerminalSidebarStatusInput {
   lastAction?: string | null;
 }
 
+export interface TerminalSidebarTitleInput {
+  label?: string | null;
+  parsedTitle?: string | null;
+  featureTitle?: string | null;
+}
+
 const ACTION_STATUS_PATTERNS = [
-  /^(Reading|Writing|Editing|Searching|Running|Listing|Creating|Deleting|Moving|Copying|Updating|Opening|Fetching|Checking|Installing|Building|Testing)\b/i,
+  /^(Reading|Writing|Editing|Searching|Listing|Creating|Deleting|Moving|Copying|Updating|Opening|Fetching|Checking|Installing|Building|Testing)\b/i,
+  /^Running\s+\S+/i,
   /^Using\b/i,
   /^Calling\b/i,
   /^Thinking\b/i,
@@ -24,12 +31,29 @@ function normalizeStatusLine(statusLine?: string): string | null {
   return line.length > 48 ? `${line.slice(0, 47)}...` : line;
 }
 
-export function getTerminalSidebarStatus(term: TerminalSidebarStatusInput): string {
+export function getTerminalSidebarStatus(term: TerminalSidebarStatusInput): string | null {
   if (term.needsInput || term.status === "WaitingForInput") return "Waiting";
   if (term.exited) return "Exited";
   const lastAction = normalizeStatusLine(term.lastAction ?? undefined);
   if (lastAction) return lastAction;
   const status = normalizeStatusLine(term.statusLine);
   if (status) return status;
-  return "Running";
+  return null;
+}
+
+function isGenericClaudeTitle(title: string): boolean {
+  return /^Claude Code\b/i.test(title.trim());
+}
+
+export function getTerminalSidebarTitle(input: TerminalSidebarTitleInput): string {
+  const parsedTitle = input.parsedTitle?.trim();
+  if (parsedTitle && !isGenericClaudeTitle(parsedTitle)) return parsedTitle;
+
+  const label = input.label?.trim();
+  if (label && !isGenericClaudeTitle(label)) return label;
+
+  const featureTitle = input.featureTitle?.trim();
+  if (featureTitle) return featureTitle;
+
+  return "Session";
 }

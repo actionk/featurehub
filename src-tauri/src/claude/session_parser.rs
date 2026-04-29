@@ -256,16 +256,61 @@ pub struct ParsedStatusHint {
 enum RecentSignal {
     UserPrompt,
     AssistantText(String),
-    AssistantTool(String),
+    AssistantTool { name: String, label: String },
     ToolResult,
 }
 
-fn tool_action_label(tool: &str) -> String {
+fn short_path_label(path: &str) -> String {
+    let normalized = path.replace('\\', "/");
+    let is_windows_absolute = normalized.len() >= 3 && normalized.as_bytes()[1] == b':';
+    let is_unix_absolute = normalized.starts_with('/');
+    if is_windows_absolute || is_unix_absolute {
+        return std::path::Path::new(path)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or(path)
+            .to_string();
+    }
+    trim_action_label(&normalized)
+}
+
+fn trim_action_label(label: &str) -> String {
+    let trimmed = label.trim();
+    if trimmed.len() > 80 {
+        format!("{}...", &trimmed[..77])
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn input_string<'a>(input: Option<&'a serde_json::Value>, key: &str) -> Option<&'a str> {
+    input?.get(key)?.as_str().filter(|value| !value.trim().is_empty())
+}
+
+fn tool_action_label(tool: &str, input: Option<&serde_json::Value>) -> String {
+    if let Some(description) = input_string(input, "description") {
+        return trim_action_label(description);
+    }
+
     match tool {
-        "Read" => "Reading files".to_string(),
-        "Edit" | "Write" => "Writing code".to_string(),
-        "Bash" => "Running command".to_string(),
-        "Grep" | "Glob" => "Searching".to_string(),
+        "Read" => input_string(input, "file_path")
+            .map(|path| format!("Reading {}", short_path_label(path)))
+            .unwrap_or_else(|| "Reading files".to_string()),
+        "Edit" => input_string(input, "file_path")
+            .map(|path| format!("Editing {}", short_path_label(path)))
+            .unwrap_or_else(|| "Editing code".to_string()),
+        "Write" => input_string(input, "file_path")
+            .map(|path| format!("Writing {}", short_path_label(path)))
+            .unwrap_or_else(|| "Writing code".to_string()),
+        "Bash" => input_string(input, "command")
+            .map(|command| format!("Running {}", trim_action_label(command)))
+            .unwrap_or_else(|| "Running command".to_string()),
+        "Grep" => input_string(input, "pattern")
+            .map(|pattern| format!("Searching for {}", trim_action_label(pattern)))
+            .unwrap_or_else(|| "Searching".to_string()),
+        "Glob" => input_string(input, "pattern")
+            .map(|pattern| format!("Finding {}", trim_action_label(pattern)))
+            .unwrap_or_else(|| "Searching".to_string()),
         "Agent" => "Running subagent".to_string(),
         "AskUserQuestion" => "Asking question".to_string(),
         other => format!("Using {}", other),
@@ -297,8 +342,9 @@ fn signal_from_typed_entry(line: &str) -> Option<RecentSignal> {
                             signal = Some(RecentSignal::AssistantText(text));
                         }
                     }
-                    AssistantContentBlock::ToolUse { name, .. } => {
-                        signal = Some(RecentSignal::AssistantTool(name));
+                    AssistantContentBlock::ToolUse { name, input, .. } => {
+                        let label = tool_action_label(&name, Some(&input));
+                        signal = Some(RecentSignal::AssistantTool { name, label });
                     }
                     _ => {}
                 }
@@ -380,7 +426,11 @@ fn signal_from_value_entry(val: &serde_json::Value) -> Option<RecentSignal> {
                 match item.get("type").and_then(|t| t.as_str()) {
                     Some("tool_use") => {
                         if let Some(name) = item.get("name").and_then(|n| n.as_str()) {
-                            signal = Some(RecentSignal::AssistantTool(name.to_string()));
+                            let label = tool_action_label(name, item.get("input"));
+                            signal = Some(RecentSignal::AssistantTool {
+                                name: name.to_string(),
+                                label,
+                            });
                         }
                     }
                     Some("text") => {
@@ -442,18 +492,18 @@ pub fn parse_status_hint(path: &std::path::Path) -> ParsedStatusHint {
 
     let status_hint = match last_signal {
         Some(RecentSignal::UserPrompt) => StatusHint::UserPrompted,
-        Some(RecentSignal::AssistantTool(_)) => StatusHint::ToolRunning,
+        Some(RecentSignal::AssistantTool { .. }) => StatusHint::ToolRunning,
         _ => StatusHint::ClaudeResponded,
     };
 
     let looks_like_waiting = match &last_signal {
         Some(RecentSignal::AssistantText(text)) => text_looks_like_waiting(text),
-        Some(RecentSignal::AssistantTool(tool)) if tool == "AskUserQuestion" => true,
+        Some(RecentSignal::AssistantTool { name, .. }) if name == "AskUserQuestion" => true,
         _ => false,
     };
 
     let last_action = match last_signal {
-        Some(RecentSignal::AssistantTool(tool)) => Some(tool_action_label(&tool)),
+        Some(RecentSignal::AssistantTool { label, .. }) => Some(label),
         _ => None,
     };
 
@@ -610,6 +660,14 @@ pub fn is_bad_title(s: &str) -> bool {
         return true;
     }
 
+    // Generic terminal titles sent by Claude Code via OSC sequences.
+    if trimmed
+        .get(..11)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("Claude Code"))
+    {
+        return true;
+    }
+
     false
 }
 
@@ -693,6 +751,7 @@ mod tests {
         assert!(is_bad_title("/help")); // slash command
         assert!(is_bad_title("git status")); // git command
         assert!(is_bad_title("Caveat: something")); // system prefix
+        assert!(is_bad_title("Claude Code - Status")); // terminal OSC title
     }
 
     #[test]
@@ -752,11 +811,22 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_last_action_uses_tool_description() {
+        let content = r#"{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"git push","description":"Push branch to remote"}}]}}"#;
+        let f = write_temp_jsonl(content);
+        let hint = parse_status_hint(f.path());
+        assert_eq!(hint.last_action, Some("Push branch to remote".to_string()));
+    }
+
+    #[test]
     fn test_typed_parser_reads_valid_assistant_tool_entry() {
         let line = r#"{"type":"assistant","uuid":"a1","parentUuid":null,"isSidechain":false,"sessionId":"s1","timestamp":"2026-01-01T00:00:00Z","message":{"id":"msg_1","type":"message","role":"assistant","model":"claude-sonnet-4-6","content":[{"type":"tool_use","id":"toolu_1","name":"Read","input":{"file_path":"src/main.rs"}}],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":10,"output_tokens":5}}}"#;
         assert_eq!(
             signal_from_typed_entry(line),
-            Some(RecentSignal::AssistantTool("Read".to_string()))
+            Some(RecentSignal::AssistantTool {
+                name: "Read".to_string(),
+                label: "Reading src/main.rs".to_string(),
+            })
         );
     }
 
