@@ -19,7 +19,10 @@ pub fn add_link(
     // Fire extension event hooks for link_created (fire-and-forget)
     if let (Ok(registry), Ok(sp_guard)) = (state.extensions.lock(), state.storage_path.lock()) {
         if let Some(ref storage_path) = *sp_guard {
-            let db_path = storage_path.join("feature-hub.db").to_string_lossy().to_string();
+            let db_path = storage_path
+                .join("feature-hub.db")
+                .to_string_lossy()
+                .to_string();
             let sp_str = storage_path.to_string_lossy().to_string();
             let payload = serde_json::json!({
                 "link_type": link.link_type,
@@ -88,7 +91,10 @@ pub fn delete_link(state: State<'_, AppState>, id: String) -> Result<(), String>
     if let Some(link) = link {
         if let (Ok(registry), Ok(sp_guard)) = (state.extensions.lock(), state.storage_path.lock()) {
             if let Some(ref storage_path) = *sp_guard {
-                let db_path = storage_path.join("feature-hub.db").to_string_lossy().to_string();
+                let db_path = storage_path
+                    .join("feature-hub.db")
+                    .to_string_lossy()
+                    .to_string();
                 let sp_str = storage_path.to_string_lossy().to_string();
                 let payload = serde_json::json!({
                     "link_type": link.link_type,

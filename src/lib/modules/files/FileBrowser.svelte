@@ -8,8 +8,9 @@
   import type { TabContext } from "../registry";
   import FileList from "./FileList.svelte";
   import FilePreviewPanel from "./FilePreviewPanel.svelte";
+  import { createLatestGuard, createPollingGate } from "../../utils/asyncGuards";
 
-  let { featureId }: TabContext = $props();
+  let { featureId, isTabActive = true }: TabContext = $props();
 
   let files = $state<FileEntry[]>([]);
   let folders = $state<Folder[]>([]);
@@ -27,6 +28,8 @@
   let browserEl: HTMLDivElement | undefined = $state();
 
   let resizeCleanup: (() => void) | null = null;
+  const dataGuard = createLatestGuard();
+  const syncGate = createPollingGate();
 
   function onResizeStart(e: MouseEvent) {
     e.preventDefault();
@@ -55,12 +58,18 @@
   }
 
   $effect(() => {
+    const fid = featureId;
     // Clear stale preview when switching features
     selectedFile = null;
-    loadData();
-    const interval = setInterval(syncAndRefresh, 4000);
+    if (!isTabActive) {
+      dataGuard.invalidate();
+      return;
+    }
+    loadData(fid);
+    const interval = setInterval(() => syncAndRefresh(fid), 4000);
     return () => {
       clearInterval(interval);
+      dataGuard.invalidate();
       // Clean up any in-progress resize listeners on unmount
       resizeCleanup?.();
     };
@@ -68,6 +77,8 @@
 
   // Listen for Tauri native drag-drop events
   $effect(() => {
+    if (!isTabActive) return;
+    const fid = featureId;
     const unlisten = getCurrentWebview().onDragDropEvent(async (event) => {
       if (event.payload.type === "over") {
         dragOver = true;
@@ -76,8 +87,8 @@
         const paths = event.payload.paths;
         if (paths.length > 0) {
           try {
-            await addFiles(featureId, paths, null);
-            await loadData();
+            await addFiles(fid, paths, null);
+            await loadData(fid);
           } catch (e) {
             console.error("Failed to add dropped files:", e);
           }
@@ -93,56 +104,64 @@
   });
 
   // Background sync + refresh without showing loading state (used by periodic poll)
-  async function syncAndRefresh() {
-    try {
-      await syncWorkspaceFiles(featureId);
-    } catch (e) {
-      console.error("Failed to sync workspace files:", e);
-    }
-    try {
-      const [f, d] = await Promise.all([getFiles(featureId), getFolders(featureId)]);
-      files = f;
-      folders = d;
-      // Update selected file with fresh data (e.g. size changed on disk)
-      if (selectedFile) {
-        const fresh = f.find((file) => file.id === selectedFile!.id);
-        if (fresh && fresh.size !== selectedFile!.size) {
-          selectedFile = fresh;
-        }
+  async function syncAndRefresh(fid = featureId) {
+    await syncGate.run(async () => {
+      const token = dataGuard.next();
+      try {
+        await syncWorkspaceFiles(fid);
+      } catch (e) {
+        console.error("Failed to sync workspace files:", e);
       }
-    } catch (e) {
-      console.error("Failed to refresh files:", e);
-    }
+      try {
+        const [f, d] = await Promise.all([getFiles(fid), getFolders(fid)]);
+        if (!dataGuard.isCurrent(token) || fid !== featureId || !isTabActive) return;
+        files = f;
+        folders = d;
+        // Update selected file with fresh data (e.g. size changed on disk)
+        if (selectedFile) {
+          const fresh = f.find((file) => file.id === selectedFile!.id);
+          if (fresh && fresh.size !== selectedFile!.size) {
+            selectedFile = fresh;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to refresh files:", e);
+      }
+    });
   }
 
-  async function loadData() {
+  async function loadData(fid = featureId) {
+    const token = dataGuard.next();
     loading = true;
     try {
       try {
-        await syncWorkspaceFiles(featureId);
+        await syncWorkspaceFiles(fid);
       } catch (e) {
         console.error("Failed to sync workspace files:", e);
       }
       const [f, d] = await Promise.all([
-        getFiles(featureId),
-        getFolders(featureId),
+        getFiles(fid),
+        getFolders(fid),
       ]);
+      if (!dataGuard.isCurrent(token) || fid !== featureId || !isTabActive) return;
       files = f;
       folders = d;
 
       // Restore persisted file selection
       if (!selectedFile) {
-        const savedFileId = localStorage.getItem(`featurehub:selectedFile:${featureId}`);
+        const savedFileId = localStorage.getItem(`featurehub:selectedFile:${fid}`);
         if (savedFileId) {
           const found = f.find((file) => file.id === savedFileId);
           if (found) selectedFile = found;
-          else localStorage.removeItem(`featurehub:selectedFile:${featureId}`);
+          else localStorage.removeItem(`featurehub:selectedFile:${fid}`);
         }
       }
     } catch (e) {
       console.error("Failed to load files:", e);
     } finally {
-      loading = false;
+      if (dataGuard.isCurrent(token) && fid === featureId) {
+        loading = false;
+      }
     }
   }
 

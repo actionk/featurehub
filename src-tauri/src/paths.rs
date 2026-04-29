@@ -29,7 +29,9 @@ pub fn resolve_path(path: &str, storage_base: &Path) -> PathBuf {
 
 /// Resolve a path and return as String.
 pub fn resolve_path_string(path: &str, storage_base: &Path) -> String {
-    resolve_path(path, storage_base).to_string_lossy().to_string()
+    resolve_path(path, storage_base)
+        .to_string_lossy()
+        .to_string()
 }
 
 /// Extract relative path starting from "workspaces/..." in an absolute path.

@@ -16,7 +16,10 @@ pub fn get_features(
 }
 
 #[tauri::command]
-pub fn get_feature(state: State<'_, AppState>, id: String) -> Result<db::features::Feature, String> {
+pub fn get_feature(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<db::features::Feature, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     let mut feature = db::features::get_feature(&conn, &id)?;
     let storage = state.storage_path.lock().map_err(|e| e.to_string())?;
@@ -29,10 +32,7 @@ pub fn get_feature(state: State<'_, AppState>, id: String) -> Result<db::feature
 /// Combined endpoint: fetches feature + tags + tasks + plans in a single IPC call / single DB lock.
 /// Sessions are excluded because they do expensive disk I/O for title scanning.
 #[tauri::command]
-pub fn get_feature_data(
-    state: State<'_, AppState>,
-    id: String,
-) -> Result<FeatureData, String> {
+pub fn get_feature_data(state: State<'_, AppState>, id: String) -> Result<FeatureData, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     let mut feature = db::features::get_feature(&conn, &id)?;
     let storage = state.storage_path.lock().map_err(|e| e.to_string())?;
@@ -69,7 +69,8 @@ pub fn create_feature(
     parent_id: Option<String>,
 ) -> Result<db::features::Feature, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
-    let mut feature = db::features::create_feature(&conn, &title, ticket_id, status, description, parent_id)?;
+    let mut feature =
+        db::features::create_feature(&conn, &title, ticket_id, status, description, parent_id)?;
     let storage = state.storage_path.lock().map_err(|e| e.to_string())?;
     if let Some(ref base) = *storage {
         resolve_feature_dirs(&mut feature, base);
@@ -88,7 +89,15 @@ pub fn update_feature(
     description: Option<String>,
 ) -> Result<db::features::Feature, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
-    let mut feature = db::features::update_feature(&conn, &id, title, ticket_id, status, sort_order, description)?;
+    let mut feature = db::features::update_feature(
+        &conn,
+        &id,
+        title,
+        ticket_id,
+        status,
+        sort_order,
+        description,
+    )?;
     let storage = state.storage_path.lock().map_err(|e| e.to_string())?;
     if let Some(ref base) = *storage {
         resolve_feature_dirs(&mut feature, base);
@@ -125,7 +134,10 @@ pub fn reorder_features(state: State<'_, AppState>, ids: Vec<String>) -> Result<
 }
 
 #[tauri::command]
-pub fn duplicate_feature(state: State<'_, AppState>, id: String) -> Result<db::features::Feature, String> {
+pub fn duplicate_feature(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<db::features::Feature, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     let storage = state.storage_path.lock().map_err(|e| e.to_string())?;
     let base = storage.as_deref();
@@ -137,7 +149,10 @@ pub fn duplicate_feature(state: State<'_, AppState>, id: String) -> Result<db::f
 }
 
 #[tauri::command]
-pub fn toggle_pin_feature(state: State<'_, AppState>, id: String) -> Result<db::features::Feature, String> {
+pub fn toggle_pin_feature(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<db::features::Feature, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     let mut feature = db::features::toggle_pin_feature(&conn, &id)?;
     let storage = state.storage_path.lock().map_err(|e| e.to_string())?;
@@ -148,7 +163,11 @@ pub fn toggle_pin_feature(state: State<'_, AppState>, id: String) -> Result<db::
 }
 
 #[tauri::command]
-pub fn set_feature_archived(state: State<'_, AppState>, id: String, archived: bool) -> Result<db::features::Feature, String> {
+pub fn set_feature_archived(
+    state: State<'_, AppState>,
+    id: String,
+    archived: bool,
+) -> Result<db::features::Feature, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     let mut feature = db::features::set_archived(&conn, &id, archived)?;
     let storage = state.storage_path.lock().map_err(|e| e.to_string())?;

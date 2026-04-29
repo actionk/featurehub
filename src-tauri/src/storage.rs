@@ -39,10 +39,7 @@ pub fn save_config(app: &tauri::AppHandle, config: &StorageConfig) -> Result<(),
     std::fs::write(&path, data).map_err(|e| format!("Failed to write config: {}", e))
 }
 
-pub fn add_storage(
-    app: &tauri::AppHandle,
-    path: &str,
-) -> Result<StorageEntry, String> {
+pub fn add_storage(app: &tauri::AppHandle, path: &str) -> Result<StorageEntry, String> {
     let storage_path = Path::new(path);
 
     // Create the storage folder and files subdirectory

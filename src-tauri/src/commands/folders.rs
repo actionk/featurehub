@@ -24,7 +24,10 @@ pub fn create_folder(
     let (folder, base, relative_path) = {
         let conn = state.db.lock().map_err(|e| e.to_string())?;
         let storage = state.storage_path.lock().map_err(|e| e.to_string())?;
-        let base = storage.as_deref().ok_or("No active storage path")?.to_path_buf();
+        let base = storage
+            .as_deref()
+            .ok_or("No active storage path")?
+            .to_path_buf();
 
         let folder = db::folders::create_folder(&conn, &feature_id, parent_id.as_deref(), &name)?;
         let relative_path = db::folders::get_folder_path(&conn, &folder.id)?;
@@ -43,20 +46,26 @@ pub fn rename_folder(
     new_name: String,
 ) -> Result<db::folders::Folder, String> {
     let storage = state.storage_path.lock().map_err(|e| e.to_string())?;
-    let base = storage.as_deref().ok_or("No active storage path")?.to_path_buf();
+    let base = storage
+        .as_deref()
+        .ok_or("No active storage path")?
+        .to_path_buf();
     drop(storage);
 
     // Phase 1: DB operations — get old path, rename in DB, get new path
     let (folder, feature_id, old_disk_path, new_disk_path) = {
         let conn = state.db.lock().map_err(|e| e.to_string())?;
 
-        let feature_id: String = conn.query_row(
-            "SELECT feature_id FROM folders WHERE id = ?1",
-            rusqlite::params![id],
-            |row| row.get(0),
-        ).map_err(|e| e.to_string())?;
+        let feature_id: String = conn
+            .query_row(
+                "SELECT feature_id FROM folders WHERE id = ?1",
+                rusqlite::params![id],
+                |row| row.get(0),
+            )
+            .map_err(|e| e.to_string())?;
         let old_relative_path = db::folders::get_folder_path(&conn, &id)?;
-        let old_disk_path = file_manager::get_storage_path(&base, &feature_id).join(&old_relative_path);
+        let old_disk_path =
+            file_manager::get_storage_path(&base, &feature_id).join(&old_relative_path);
 
         let folder = db::folders::rename_folder(&conn, &id, &new_name)?;
 
@@ -91,18 +100,21 @@ fn update_stored_paths_after_rename(
     let relative_path = db::folders::get_folder_path(conn, folder_id)?;
     let disk_dir = file_manager::get_storage_path(base, feature_id).join(&relative_path);
 
-    let mut stmt = conn.prepare("SELECT id, filename FROM files WHERE folder_id = ?1")
+    let mut stmt = conn
+        .prepare("SELECT id, filename FROM files WHERE folder_id = ?1")
         .map_err(|e| e.to_string())?;
-    let file_rows: Vec<(String, String)> = stmt.query_map(rusqlite::params![folder_id], |row| {
-        Ok((row.get(0)?, row.get(1)?))
-    })
-    .map_err(|e| e.to_string())?
-    .collect::<Result<Vec<_>, _>>()
-    .map_err(|e| e.to_string())?;
+    let file_rows: Vec<(String, String)> = stmt
+        .query_map(rusqlite::params![folder_id], |row| {
+            Ok((row.get(0)?, row.get(1)?))
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
 
     for (file_id, filename) in &file_rows {
         // Store as relative path
-        let new_stored_path = disk_dir.join(filename)
+        let new_stored_path = disk_dir
+            .join(filename)
             .strip_prefix(base)
             .map(|r| r.to_string_lossy().replace('\\', "/"))
             .unwrap_or_else(|_| disk_dir.join(filename).to_string_lossy().to_string());
@@ -110,9 +122,11 @@ fn update_stored_paths_after_rename(
     }
 
     // Recurse into child folders
-    let mut child_stmt = conn.prepare("SELECT id FROM folders WHERE parent_id = ?1")
+    let mut child_stmt = conn
+        .prepare("SELECT id FROM folders WHERE parent_id = ?1")
         .map_err(|e| e.to_string())?;
-    let children: Vec<String> = child_stmt.query_map(rusqlite::params![folder_id], |row| row.get(0))
+    let children: Vec<String> = child_stmt
+        .query_map(rusqlite::params![folder_id], |row| row.get(0))
         .map_err(|e| e.to_string())?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
@@ -129,13 +143,18 @@ pub fn delete_folder(state: State<'_, AppState>, id: String) -> Result<(), Strin
     let (base, feature_id, relative_path) = {
         let conn = state.db.lock().map_err(|e| e.to_string())?;
         let storage = state.storage_path.lock().map_err(|e| e.to_string())?;
-        let base = storage.as_deref().ok_or("No active storage path")?.to_path_buf();
+        let base = storage
+            .as_deref()
+            .ok_or("No active storage path")?
+            .to_path_buf();
 
-        let feature_id: String = conn.query_row(
-            "SELECT feature_id FROM folders WHERE id = ?1",
-            rusqlite::params![id],
-            |row| row.get(0),
-        ).map_err(|e| e.to_string())?;
+        let feature_id: String = conn
+            .query_row(
+                "SELECT feature_id FROM folders WHERE id = ?1",
+                rusqlite::params![id],
+                |row| row.get(0),
+            )
+            .map_err(|e| e.to_string())?;
 
         let relative_path = db::folders::get_folder_path(&conn, &id)?;
 
@@ -161,11 +180,13 @@ pub fn move_folder(
     let storage = state.storage_path.lock().map_err(|e| e.to_string())?;
     let base = storage.as_deref().ok_or("No active storage path")?;
 
-    let feature_id: String = conn.query_row(
-        "SELECT feature_id FROM folders WHERE id = ?1",
-        rusqlite::params![id],
-        |row| row.get(0),
-    ).map_err(|e| e.to_string())?;
+    let feature_id: String = conn
+        .query_row(
+            "SELECT feature_id FROM folders WHERE id = ?1",
+            rusqlite::params![id],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
 
     // Get old disk path
     let old_relative_path = db::folders::get_folder_path(&conn, &id)?;
@@ -203,17 +224,21 @@ pub fn move_file(
     let base = storage.as_deref().ok_or("No active storage path")?;
 
     // Get current file info
-    let old_stored_path_raw: String = conn.query_row(
-        "SELECT stored_path FROM files WHERE id = ?1",
-        rusqlite::params![id],
-        |row| row.get(0),
-    ).map_err(|e| e.to_string())?;
+    let old_stored_path_raw: String = conn
+        .query_row(
+            "SELECT stored_path FROM files WHERE id = ?1",
+            rusqlite::params![id],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
 
-    let feature_id: String = conn.query_row(
-        "SELECT feature_id FROM files WHERE id = ?1",
-        rusqlite::params![id],
-        |row| row.get(0),
-    ).map_err(|e| e.to_string())?;
+    let feature_id: String = conn
+        .query_row(
+            "SELECT feature_id FROM files WHERE id = ?1",
+            rusqlite::params![id],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
 
     // Resolve relative path for disk operations
     let old_stored_path = crate::paths::resolve_path_string(&old_stored_path_raw, base);
@@ -228,10 +253,8 @@ pub fn move_file(
     };
 
     // Move file on disk (uses absolute paths)
-    let new_stored_path_abs = file_manager::move_file_on_disk(
-        &old_stored_path,
-        &target_dir.to_string_lossy(),
-    )?;
+    let new_stored_path_abs =
+        file_manager::move_file_on_disk(&old_stored_path, &target_dir.to_string_lossy())?;
 
     // Store as relative path
     let new_stored_path = crate::paths::to_storage_relative(&new_stored_path_abs, base);
@@ -260,17 +283,23 @@ pub fn rename_file(
     let base = storage.as_deref().ok_or("No active storage path")?;
 
     // Get current stored path
-    let old_stored_path_raw: String = conn.query_row(
-        "SELECT stored_path FROM files WHERE id = ?1",
-        rusqlite::params![id],
-        |row| row.get(0),
-    ).map_err(|e| e.to_string())?;
+    let old_stored_path_raw: String = conn
+        .query_row(
+            "SELECT stored_path FROM files WHERE id = ?1",
+            rusqlite::params![id],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
 
     // Rename in DB
     let entry = db::files::rename_file(&conn, &id, &new_name)?;
 
     // Validate new_name: reject path separators and parent traversal
-    if new_name.contains('/') || new_name.contains('\\') || new_name.contains("..") || new_name.is_empty() {
+    if new_name.contains('/')
+        || new_name.contains('\\')
+        || new_name.contains("..")
+        || new_name.is_empty()
+    {
         return Err("Invalid filename: must not contain path separators or be empty".to_string());
     }
 

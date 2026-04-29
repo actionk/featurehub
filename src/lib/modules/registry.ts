@@ -15,6 +15,7 @@ export interface TabContext {
   onRefresh: () => void;
   onSessionsChanged: () => void;
   onOpenSettings?: (tab?: string) => void;
+  isTabActive?: boolean;
 }
 
 export interface TabBadge {

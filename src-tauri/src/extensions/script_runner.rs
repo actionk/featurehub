@@ -23,7 +23,9 @@ pub struct Notification {
     pub plan_id: Option<String>,
 }
 
-fn default_kind() -> String { "info".into() }
+fn default_kind() -> String {
+    "info".into()
+}
 
 #[derive(Debug)]
 pub struct ScriptResult {
@@ -130,7 +132,8 @@ pub fn run_blocking_with_notifications(
 
     // Write input to stdin and close it (signals EOF to the script).
     if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(input_json.as_bytes())
+        stdin
+            .write_all(input_json.as_bytes())
             .map_err(|e| format!("Failed to write input to script {:?}: {}", script_path, e))?;
     }
 
@@ -141,7 +144,10 @@ pub fn run_blocking_with_notifications(
     std::thread::spawn(move || {
         use std::io::Read;
         let mut buf = Vec::new();
-        let result = { let mut r = stdout_pipe; r.read_to_end(&mut buf).map(|_| buf) };
+        let result = {
+            let mut r = stdout_pipe;
+            r.read_to_end(&mut buf).map(|_| buf)
+        };
         let _ = tx.send(result);
     });
 
@@ -175,7 +181,9 @@ pub fn run_blocking_with_notifications(
             notifications: result.notifications,
         })
     } else {
-        Err(result.error.unwrap_or_else(|| "Script returned ok=false".to_string()))
+        Err(result
+            .error
+            .unwrap_or_else(|| "Script returned ok=false".to_string()))
     }
 }
 
@@ -197,12 +205,15 @@ pub fn forward_notifications(extension_id: &str, notifications: Vec<Notification
 
 /// Spawn an event hook script fire-and-forget. Errors are logged, not propagated.
 pub fn run_event_hook(script_path: std::path::PathBuf, input: ScriptInput, extension_id: String) {
-    std::thread::spawn(move || {
-        match run_blocking_with_notifications(&script_path, &input, 10) {
+    std::thread::spawn(
+        move || match run_blocking_with_notifications(&script_path, &input, 10) {
             Ok(result) => forward_notifications(&extension_id, result.notifications),
-            Err(e) => eprintln!("[ext:{}] Event hook {:?} failed: {}", extension_id, script_path, e),
-        }
-    });
+            Err(e) => eprintln!(
+                "[ext:{}] Event hook {:?} failed: {}",
+                extension_id, script_path, e
+            ),
+        },
+    );
 }
 
 #[cfg(test)]
@@ -222,14 +233,18 @@ mod tests {
 
     fn echo_script() -> tempfile::TempPath {
         let mut f = tempfile::NamedTempFile::new().unwrap();
-        writeln!(f, r#"
+        writeln!(
+            f,
+            r#"
 const chunks = [];
 process.stdin.on('data', c => chunks.push(c));
 process.stdin.on('end', () => {{
   const input = JSON.parse(Buffer.concat(chunks).toString());
   process.stdout.write(JSON.stringify({{ ok: true, data: input.params }}));
 }});
-"#).unwrap();
+"#
+        )
+        .unwrap();
         f.into_temp_path()
     }
 
@@ -237,21 +252,32 @@ process.stdin.on('end', () => {{
     fn runs_script_and_returns_data() {
         let script = echo_script();
         let mut input = test_input();
-        input.params = serde_json::json!({"key": "value"}).as_object().unwrap().clone();
+        input.params = serde_json::json!({"key": "value"})
+            .as_object()
+            .unwrap()
+            .clone();
         let result = run_blocking(script.as_ref(), &input, 5).unwrap();
         assert_eq!(result["key"], "value");
     }
 
     #[test]
     fn returns_error_for_nonexistent_script() {
-        let result = run_blocking(std::path::Path::new("/nonexistent/script.js"), &test_input(), 5);
+        let result = run_blocking(
+            std::path::Path::new("/nonexistent/script.js"),
+            &test_input(),
+            5,
+        );
         assert!(result.is_err());
     }
 
     #[test]
     fn returns_error_when_script_returns_ok_false() {
         let mut f = tempfile::NamedTempFile::new().unwrap();
-        writeln!(f, r#"process.stdout.write(JSON.stringify({{ok: false, error: "something went wrong"}}));"#).unwrap();
+        writeln!(
+            f,
+            r#"process.stdout.write(JSON.stringify({{ok: false, error: "something went wrong"}}));"#
+        )
+        .unwrap();
         let path = f.into_temp_path();
         let result = run_blocking(path.as_ref(), &test_input(), 5);
         assert!(result.is_err());
@@ -261,14 +287,18 @@ process.stdin.on('end', () => {{
     #[test]
     fn returns_notifications_from_script() {
         let mut f = tempfile::NamedTempFile::new().unwrap();
-        writeln!(f, r#"process.stdout.write(JSON.stringify({{
+        writeln!(
+            f,
+            r#"process.stdout.write(JSON.stringify({{
             ok: true,
             data: null,
             notifications: [
                 {{ feature_id: "f1", kind: "info", message: "hello" }},
                 {{ feature_id: "f1", kind: "warn", message: "heads up" }}
             ]
-        }}));"#).unwrap();
+        }}));"#
+        )
+        .unwrap();
         let path = f.into_temp_path();
         let out = run_blocking_with_notifications(path.as_ref(), &test_input(), 5).unwrap();
         assert_eq!(out.notifications.len(), 2);

@@ -1,8 +1,9 @@
 <script lang="ts">
   import DOMPurify from "dompurify";
   import type { Marked } from "marked";
-  import { tick } from "svelte";
+  import { onDestroy, tick } from "svelte";
   import { getMermaidEnabled, getOpenFgaEnabled } from "../stores/settings.svelte";
+  import { createDebouncedTask, createLatestGuard } from "../utils/asyncGuards";
 
   // Lazy-load marked to reduce initial bundle size
   let MarkedClass: typeof Marked | null = null;
@@ -27,6 +28,9 @@
   } = $props();
 
   let previewEl: HTMLDivElement | undefined = $state();
+  let renderContent = $state("");
+  const previewDebounce = createDebouncedTask(180);
+  const mermaidRenderGuard = createLatestGuard();
 
   // Marked instance is created lazily after the library loads
 
@@ -233,10 +237,26 @@
     });
   });
 
+  $effect(() => {
+    const nextContent = content;
+    if (!activeMarked) {
+      renderContent = nextContent;
+      return;
+    }
+    previewDebounce.schedule(() => {
+      renderContent = nextContent;
+    });
+  });
+
+  onDestroy(() => {
+    previewDebounce.cancel();
+    mermaidRenderGuard.invalidate();
+  });
+
   let rawHtml = $derived.by(() => {
-    if (!activeMarked) return escapeHtml(content);
+    if (!activeMarked) return escapeHtml(renderContent);
     mermaidSources = [];
-    return activeMarked.parse(content) as string;
+    return activeMarked.parse(renderContent) as string;
   });
 
   $effect(() => {
@@ -246,16 +266,18 @@
     if (!el || !enabled) return;
 
     const sources = [...mermaidSources];
-    tick().then(() => renderMermaidBlocks(el, sources));
+    const token = mermaidRenderGuard.next();
+    tick().then(() => renderMermaidBlocks(el, sources, token));
   });
 
   let mermaidLoaded = false;
 
-  async function renderMermaidBlocks(el: HTMLDivElement, sources: string[]) {
+  async function renderMermaidBlocks(el: HTMLDivElement, sources: string[], token: number) {
     const placeholders = el.querySelectorAll(".mermaid-placeholder");
     if (placeholders.length === 0) return;
 
     const { default: mermaid } = await import("mermaid");
+    if (!mermaidRenderGuard.isCurrent(token)) return;
     if (!mermaidLoaded) {
       mermaid.initialize({
         startOnLoad: false,
@@ -275,6 +297,7 @@
     }
 
     for (const el of placeholders) {
+      if (!mermaidRenderGuard.isCurrent(token)) return;
       const placeholder = el as HTMLElement;
       if (placeholder.dataset.mermaidRendered === "true") continue;
 
@@ -285,11 +308,13 @@
       try {
         const id = `mermaid-${crypto.randomUUID().slice(0, 8)}`;
         const { svg } = await mermaid.render(id, source);
+        if (!mermaidRenderGuard.isCurrent(token)) return;
         placeholder.className = "mermaid-diagram";
         placeholder.innerHTML = svg;
         placeholder.dataset.mermaidRendered = "true";
       } catch (err) {
         console.warn("Mermaid render error:", err);
+        if (!mermaidRenderGuard.isCurrent(token)) return;
         placeholder.className = "";
         placeholder.innerHTML = `<pre class="mermaid-error"><code>${escapeHtml(source)}</code></pre>`;
         placeholder.dataset.mermaidRendered = "true";

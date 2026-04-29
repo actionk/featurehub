@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExtensionManifest {
@@ -179,7 +179,10 @@ mod tests {
         assert_eq!(m.tables.len(), 1);
         assert_eq!(m.tables[0].name, "ext_my_table");
         assert_eq!(m.tables[0].columns.len(), 2);
-        assert_eq!(m.tables[0].columns[1].fk.as_deref(), Some("features(id) ON DELETE CASCADE"));
+        assert_eq!(
+            m.tables[0].columns[1].fk.as_deref(),
+            Some("features(id) ON DELETE CASCADE")
+        );
         assert_eq!(m.tools.len(), 1);
         assert_eq!(m.tools[0].name, "do_thing");
         assert!(m.tools[0].params["feature_id"].required);
@@ -256,13 +259,22 @@ mod schedule_tests {
     #[test]
     fn validate_rejects_interval_below_60() {
         let m = ExtensionManifest {
-            id: "x".into(), name: "X".into(), version: "1.0.0".into(),
-            description: "".into(), author: "".into(),
-            requires: vec![], tables: vec![], tools: vec![],
-            events: vec![], tabs: vec![], instructions: "".into(),
+            id: "x".into(),
+            name: "X".into(),
+            version: "1.0.0".into(),
+            description: "".into(),
+            author: "".into(),
+            requires: vec![],
+            tables: vec![],
+            tools: vec![],
+            events: vec![],
+            tabs: vec![],
+            instructions: "".into(),
             schedules: vec![ScheduleDecl {
-                id: "s".into(), handler: "h.js".into(),
-                interval_secs: 30, enabled_setting: None,
+                id: "s".into(),
+                handler: "h.js".into(),
+                interval_secs: 30,
+                enabled_setting: None,
             }],
             storage_settings_key: None,
         };
@@ -273,13 +285,22 @@ mod schedule_tests {
     #[test]
     fn validate_rejects_empty_schedule_id() {
         let m = ExtensionManifest {
-            id: "x".into(), name: "X".into(), version: "1.0.0".into(),
-            description: "".into(), author: "".into(),
-            requires: vec![], tables: vec![], tools: vec![],
-            events: vec![], tabs: vec![], instructions: "".into(),
+            id: "x".into(),
+            name: "X".into(),
+            version: "1.0.0".into(),
+            description: "".into(),
+            author: "".into(),
+            requires: vec![],
+            tables: vec![],
+            tools: vec![],
+            events: vec![],
+            tabs: vec![],
+            instructions: "".into(),
             schedules: vec![ScheduleDecl {
-                id: "".into(), handler: "h.js".into(),
-                interval_secs: 60, enabled_setting: None,
+                id: "".into(),
+                handler: "h.js".into(),
+                interval_secs: 60,
+                enabled_setting: None,
             }],
             storage_settings_key: None,
         };
@@ -290,13 +311,22 @@ mod schedule_tests {
     #[test]
     fn validate_rejects_empty_schedule_handler() {
         let m = ExtensionManifest {
-            id: "x".into(), name: "X".into(), version: "1.0.0".into(),
-            description: "".into(), author: "".into(),
-            requires: vec![], tables: vec![], tools: vec![],
-            events: vec![], tabs: vec![], instructions: "".into(),
+            id: "x".into(),
+            name: "X".into(),
+            version: "1.0.0".into(),
+            description: "".into(),
+            author: "".into(),
+            requires: vec![],
+            tables: vec![],
+            tools: vec![],
+            events: vec![],
+            tabs: vec![],
+            instructions: "".into(),
             schedules: vec![ScheduleDecl {
-                id: "s".into(), handler: "".into(),
-                interval_secs: 60, enabled_setting: None,
+                id: "s".into(),
+                handler: "".into(),
+                interval_secs: 60,
+                enabled_setting: None,
             }],
             storage_settings_key: None,
         };

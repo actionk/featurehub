@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/svelte';
+import { fireEvent, render, waitFor } from '@testing-library/svelte';
 import AiPanel from './AiPanel.svelte';
 import type { TabContext } from '../registry';
+import { ptyResumeSession } from '../../api/tauri';
 
 // Mock Chart.js so canvas effects don't blow up in jsdom
 vi.mock('chart.js', () => {
@@ -50,9 +51,11 @@ vi.mock('../../stores/settings.svelte', () => ({
 }));
 vi.mock('../../stores/sessionActivity.svelte', () => ({
   getPanelSessions: vi.fn().mockReturnValue([]),
+  isSessionActive: vi.fn().mockReturnValue(false),
 }));
 vi.mock('../../stores/terminals.svelte', () => ({
   getTerminalsForFeature: vi.fn().mockReturnValue([]),
+  getActiveTerminals: vi.fn().mockReturnValue([]),
   addTerminal: vi.fn(),
   removeTerminal: vi.fn(),
   markExited: vi.fn(),
@@ -114,6 +117,14 @@ function makeContext(overrides: Partial<TabContext> = {}): TabContext {
 }
 
 describe('AiPanel sessions card', () => {
+  beforeEach(() => {
+    vi.mocked(ptyResumeSession).mockResolvedValue({
+      terminalId: 'term-1',
+      sessionDbId: 's1',
+      claudeSessionId: 'claude-1',
+    });
+  });
+
   it('shows Start Session CTA when no active sessions', () => {
     const { container } = render(AiPanel, { props: makeContext({ sessions: [] }) });
     expect(container.querySelector('.sc-start-cta')).toBeTruthy();
@@ -154,5 +165,36 @@ describe('AiPanel sessions card', () => {
     const { container } = render(AiPanel, { props: ctx });
     expect(container.querySelector('.sc-active')).toBeTruthy();
     expect(container.querySelector('.sc-active-compact')).toBeTruthy();
+  });
+
+  it('opens the active session when the active row is clicked', async () => {
+    const now = new Date().toISOString();
+    const ctx = makeContext({
+      sessions: [
+        { id: 's1', feature_id: 'feat-1', claude_session_id: 'claude-1', title: 'Active work', summary: null, started_at: now, ended_at: null, duration_mins: null, project_path: null, branch: null, turns: null },
+      ],
+    });
+    const { container } = render(AiPanel, { props: ctx });
+
+    await fireEvent.click(container.querySelector('.sc-active')!);
+
+    await waitFor(() => {
+      expect(ptyResumeSession).toHaveBeenCalledWith('s1', 80, 24, false);
+    });
+  });
+
+  it('can resume a past session with full access from its danger action', async () => {
+    const ctx = makeContext({
+      sessions: [
+        { id: 's1', feature_id: 'feat-1', claude_session_id: 'claude-1', title: 'Past work', summary: null, started_at: new Date().toISOString(), ended_at: new Date().toISOString(), duration_mins: 5, project_path: null, branch: null, turns: null },
+      ],
+    });
+    const { container } = render(AiPanel, { props: ctx });
+
+    await fireEvent.click(container.querySelector('.sc-session-danger-open')!);
+
+    await waitFor(() => {
+      expect(ptyResumeSession).toHaveBeenCalledWith('s1', 80, 24, true);
+    });
   });
 });

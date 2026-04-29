@@ -71,11 +71,11 @@ pub fn export_storage(
         return Err("No database found in storage".to_string());
     }
 
-    let file = fs::File::create(output_path)
-        .map_err(|e| format!("Failed to create archive: {}", e))?;
+    let file =
+        fs::File::create(output_path).map_err(|e| format!("Failed to create archive: {}", e))?;
     let mut zip = zip::ZipWriter::new(file);
-    let zip_opts = SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Deflated);
+    let zip_opts =
+        SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
     // Helper to check cancellation
     let check_cancel = || -> Result<(), String> {
@@ -126,8 +126,7 @@ pub fn export_storage(
     );
 
     // Add filtered DB to zip
-    let db_bytes = fs::read(&temp_db)
-        .map_err(|e| format!("Failed to read temp DB: {}", e))?;
+    let db_bytes = fs::read(&temp_db).map_err(|e| format!("Failed to read temp DB: {}", e))?;
     zip.start_file("feature-hub.db", zip_opts)
         .map_err(|e| format!("Failed to add DB to archive: {}", e))?;
     zip.write_all(&db_bytes)
@@ -141,10 +140,7 @@ pub fn export_storage(
         let total = tracked_files.len();
 
         if total > 0 {
-            progress_fn(
-                &format!("Archiving {} tracked files...", total),
-                25,
-            );
+            progress_fn(&format!("Archiving {} tracked files...", total), 25);
 
             for (i, (stored_path, filename)) in tracked_files.iter().enumerate() {
                 check_cancel()?;
@@ -187,8 +183,15 @@ pub fn export_storage(
     if opts.include_patches {
         check_cancel()?;
         progress_fn("Scanning repositories for uncommitted changes...", 80);
-        has_patches =
-            capture_patches(&conn, &excluded_feature_ids, storage_path, &mut zip, zip_opts, cancelled, progress_fn)?;
+        has_patches = capture_patches(
+            &conn,
+            &excluded_feature_ids,
+            storage_path,
+            &mut zip,
+            zip_opts,
+            cancelled,
+            progress_fn,
+        )?;
     }
 
     // Stage 5: Write manifest
@@ -222,19 +225,16 @@ pub fn import_storage(
     target_dir: &Path,
     progress_fn: &dyn Fn(&str, u32),
 ) -> Result<ImportResult, String> {
-    let file = fs::File::open(zip_path)
-        .map_err(|e| format!("Failed to open archive: {}", e))?;
-    let mut archive = zip::ZipArchive::new(file)
-        .map_err(|e| format!("Invalid ZIP archive: {}", e))?;
+    let file = fs::File::open(zip_path).map_err(|e| format!("Failed to open archive: {}", e))?;
+    let mut archive =
+        zip::ZipArchive::new(file).map_err(|e| format!("Invalid ZIP archive: {}", e))?;
 
     // Stage 1: Validate manifest
     progress_fn("Reading manifest...", 5);
     let manifest: ExportManifest = {
-        let mut entry = archive
-            .by_name("manifest.json")
-            .map_err(|_| {
-                "Archive missing manifest.json — not a valid Feature Hub export".to_string()
-            })?;
+        let mut entry = archive.by_name("manifest.json").map_err(|_| {
+            "Archive missing manifest.json — not a valid Feature Hub export".to_string()
+        })?;
         let mut buf = String::new();
         entry
             .read_to_string(&mut buf)
@@ -344,10 +344,9 @@ pub fn restore_repo_from_export(
         let _ = git::checkout_branch(target_path, &branch);
     }
 
-    let file = fs::File::open(zip_path)
-        .map_err(|e| format!("Failed to open archive: {}", e))?;
-    let mut archive = zip::ZipArchive::new(file)
-        .map_err(|e| format!("Failed to open archive: {}", e))?;
+    let file = fs::File::open(zip_path).map_err(|e| format!("Failed to open archive: {}", e))?;
+    let mut archive =
+        zip::ZipArchive::new(file).map_err(|e| format!("Failed to open archive: {}", e))?;
 
     let patch_name = format!("patches/{}.diff", directory_id);
     if let Ok(mut entry) = archive.by_name(&patch_name) {
@@ -380,10 +379,7 @@ pub fn restore_repo_from_export(
 }
 
 /// Check a ZIP archive for duplicates against the current DB without importing.
-pub fn check_import_zip(
-    zip_path: &Path,
-    current_db: &Path,
-) -> Result<ImportCheckResult, String> {
+pub fn check_import_zip(zip_path: &Path, current_db: &Path) -> Result<ImportCheckResult, String> {
     let temp_db = extract_db_to_temp(zip_path)?;
 
     let result = (|| -> Result<ImportCheckResult, String> {
@@ -612,8 +608,7 @@ pub fn import_into_current_storage(
 
         progress_fn("Analyzing repositories...", 93);
         let patch_ids = archive_has_patches(zip_path)?;
-        let directories_with_repos =
-            collect_repo_directories_from_conn(&current_conn, &patch_ids)?;
+        let directories_with_repos = collect_repo_directories_from_conn(&current_conn, &patch_ids)?;
 
         progress_fn("Import complete!", 100);
         Ok(ImportResult {
@@ -858,8 +853,8 @@ fn collect_repo_directories(
     db_path: &Path,
     patch_ids: &HashSet<String>,
 ) -> Result<Vec<RepoDirectory>, String> {
-    let conn = rusqlite::Connection::open(db_path)
-        .map_err(|e| format!("Failed to open DB: {}", e))?;
+    let conn =
+        rusqlite::Connection::open(db_path).map_err(|e| format!("Failed to open DB: {}", e))?;
 
     let mut stmt = conn
         .prepare(
@@ -900,31 +895,27 @@ fn collect_repo_directories(
 
 /// Extract `feature-hub.db` from a ZIP to a temp file and return its path.
 fn extract_db_to_temp(zip_path: &Path) -> Result<PathBuf, String> {
-    let file = fs::File::open(zip_path)
-        .map_err(|e| format!("Failed to open archive: {}", e))?;
+    let file = fs::File::open(zip_path).map_err(|e| format!("Failed to open archive: {}", e))?;
     let mut archive =
         zip::ZipArchive::new(file).map_err(|e| format!("Invalid ZIP archive: {}", e))?;
     let mut entry = archive
         .by_name("feature-hub.db")
         .map_err(|_| "Archive missing database — not a valid Feature Hub export".to_string())?;
-    let temp_path = std::env::temp_dir()
-        .join(format!("fh-import-{}.db", uuid::Uuid::new_v4()));
+    let temp_path = std::env::temp_dir().join(format!("fh-import-{}.db", uuid::Uuid::new_v4()));
     let mut out =
         fs::File::create(&temp_path).map_err(|e| format!("Failed to create temp file: {}", e))?;
-    std::io::copy(&mut entry, &mut out)
-        .map_err(|e| format!("Failed to extract DB: {}", e))?;
+    std::io::copy(&mut entry, &mut out).map_err(|e| format!("Failed to extract DB: {}", e))?;
     Ok(temp_path)
 }
 
 /// Read and parse `manifest.json` from a ZIP archive.
 fn read_manifest_from_zip(zip_path: &Path) -> Result<ExportManifest, String> {
-    let file = fs::File::open(zip_path)
-        .map_err(|e| format!("Failed to open archive: {}", e))?;
+    let file = fs::File::open(zip_path).map_err(|e| format!("Failed to open archive: {}", e))?;
     let mut archive =
         zip::ZipArchive::new(file).map_err(|e| format!("Invalid ZIP archive: {}", e))?;
-    let mut entry = archive
-        .by_name("manifest.json")
-        .map_err(|_| "Archive missing manifest.json — not a valid Feature Hub export".to_string())?;
+    let mut entry = archive.by_name("manifest.json").map_err(|_| {
+        "Archive missing manifest.json — not a valid Feature Hub export".to_string()
+    })?;
     let mut buf = String::new();
     entry
         .read_to_string(&mut buf)
@@ -1023,8 +1014,7 @@ fn import_feature_tags_mapped(
 
 /// Extract workspace files from the ZIP into `storage`, skipping DB, manifest, and patches.
 fn extract_files_to_storage(zip_path: &Path, storage: &Path) -> Result<usize, String> {
-    let file = fs::File::open(zip_path)
-        .map_err(|e| format!("Failed to open archive: {}", e))?;
+    let file = fs::File::open(zip_path).map_err(|e| format!("Failed to open archive: {}", e))?;
     let mut archive =
         zip::ZipArchive::new(file).map_err(|e| format!("Invalid ZIP archive: {}", e))?;
     let mut count = 0usize;
@@ -1084,24 +1074,25 @@ fn collect_repo_directories_from_conn(
         })
         .map_err(|e| format!("Failed to read repo directories: {}", e))?
         .filter_map(|r| r.ok())
-        .map(|(id, feature_id, repo_url, label, feature_title)| RepoDirectory {
-            has_patch: patch_ids.contains(&id),
-            directory_id: id,
-            feature_id,
-            feature_title,
-            repo_url,
-            label,
-        })
+        .map(
+            |(id, feature_id, repo_url, label, feature_title)| RepoDirectory {
+                has_patch: patch_ids.contains(&id),
+                directory_id: id,
+                feature_id,
+                feature_title,
+                repo_url,
+                label,
+            },
+        )
         .collect();
 
     Ok(results)
 }
 
 fn archive_has_patches(zip_path: &Path) -> Result<HashSet<String>, String> {
-    let file = fs::File::open(zip_path)
-        .map_err(|e| format!("Failed to open archive: {}", e))?;
-    let mut archive = zip::ZipArchive::new(file)
-        .map_err(|e| format!("Failed to read archive: {}", e))?;
+    let file = fs::File::open(zip_path).map_err(|e| format!("Failed to open archive: {}", e))?;
+    let mut archive =
+        zip::ZipArchive::new(file).map_err(|e| format!("Failed to read archive: {}", e))?;
 
     let mut ids = HashSet::new();
     for i in 0..archive.len() {

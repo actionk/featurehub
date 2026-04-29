@@ -1,6 +1,6 @@
-use tauri::State;
 use crate::db;
 use crate::AppState;
+use tauri::State;
 
 // ─── Folder commands ────────────────────────────────────────────────────────
 
@@ -33,10 +33,7 @@ pub fn rename_knowledge_folder(
 }
 
 #[tauri::command]
-pub fn delete_knowledge_folder(
-    state: State<'_, AppState>,
-    id: String,
-) -> Result<(), String> {
+pub fn delete_knowledge_folder(state: State<'_, AppState>, id: String) -> Result<(), String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     db::knowledge::delete_folder(&conn, &id)
 }
@@ -112,10 +109,7 @@ pub fn update_knowledge_entry(
 }
 
 #[tauri::command]
-pub fn delete_knowledge_entry(
-    state: State<'_, AppState>,
-    id: String,
-) -> Result<(), String> {
+pub fn delete_knowledge_entry(state: State<'_, AppState>, id: String) -> Result<(), String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     db::knowledge::delete_entry(&conn, &id)
 }

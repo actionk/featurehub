@@ -15,7 +15,8 @@ impl ScheduleHandle {
     /// but explicit when you need to be sure cleanup completed before continuing.
     pub fn cancel_and_join(mut self) {
         // Drop will handle the actual cancel + join; this just consumes self.
-        self.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+        self.cancel
+            .store(true, std::sync::atomic::Ordering::Relaxed);
         if let Some(j) = self.join.take() {
             let _ = j.join();
         }
@@ -24,7 +25,8 @@ impl ScheduleHandle {
 
 impl Drop for ScheduleHandle {
     fn drop(&mut self) {
-        self.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+        self.cancel
+            .store(true, std::sync::atomic::Ordering::Relaxed);
         if let Some(j) = self.join.take() {
             let _ = j.join();
         }
@@ -88,7 +90,9 @@ pub fn spawn_schedule(
                 let ext_id = extension_id.clone();
                 match script_runner::run_blocking_with_notifications(&handler_path, &input, 60) {
                     Ok(r) => script_runner::forward_notifications(&ext_id, r.notifications),
-                    Err(e) => eprintln!("[ext:{}] schedule '{}' failed: {}", ext_id, schedule.id, e),
+                    Err(e) => {
+                        eprintln!("[ext:{}] schedule '{}' failed: {}", ext_id, schedule.id, e)
+                    }
                 }
                 // No explicit reset — _guard drops at end of iteration.
                 next_tick = Instant::now() + interval;
@@ -97,7 +101,10 @@ pub fn spawn_schedule(
         }
     });
 
-    ScheduleHandle { cancel, join: Some(join) }
+    ScheduleHandle {
+        cancel,
+        join: Some(join),
+    }
 }
 
 #[cfg(test)]

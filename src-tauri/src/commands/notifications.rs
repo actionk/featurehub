@@ -9,8 +9,7 @@ pub async fn poll_notifications() -> Result<Vec<crate::config::AppNotification>,
         let data = std::fs::read_to_string(&path)
             .map_err(|e| format!("Failed to read notifications: {}", e))?;
         // Clear the file
-        std::fs::write(&path, "")
-            .map_err(|e| format!("Failed to clear notifications: {}", e))?;
+        std::fs::write(&path, "").map_err(|e| format!("Failed to clear notifications: {}", e))?;
 
         let notifs: Vec<crate::config::AppNotification> = data
             .lines()

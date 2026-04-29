@@ -296,7 +296,9 @@ pub fn get_all_session_ids(conn: &Connection) -> Result<Vec<(String, String)>, S
         .map_err(|e| e.to_string())?;
 
     let pairs = stmt
-        .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })
         .map_err(|e| e.to_string())?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
@@ -304,7 +306,11 @@ pub fn get_all_session_ids(conn: &Connection) -> Result<Vec<(String, String)>, S
     Ok(pairs)
 }
 
-pub fn move_session(conn: &Connection, id: &str, target_feature_id: &str) -> Result<Session, String> {
+pub fn move_session(
+    conn: &Connection,
+    id: &str,
+    target_feature_id: &str,
+) -> Result<Session, String> {
     let now = Utc::now().to_rfc3339();
 
     conn.execute(
@@ -405,7 +411,8 @@ mod tests {
             "INSERT INTO sessions (id, feature_id, claude_session_id, branch, linked_at)
              VALUES ('s1', 'f1', 'claude-abc', 'main', '2026-01-01T00:00:00Z')",
             [],
-        ).unwrap();
+        )
+        .unwrap();
 
         let rows = get_all_sessions_for_panel(&conn).unwrap();
         assert_eq!(rows.len(), 1);
@@ -426,7 +433,8 @@ mod tests {
             "INSERT INTO sessions (id, feature_id, claude_session_id, linked_at)
              VALUES ('s1', 'f1', '', '2026-01-01T00:00:00Z')",
             [],
-        ).unwrap();
+        )
+        .unwrap();
 
         let rows = get_all_sessions_for_panel(&conn).unwrap();
         assert!(rows.is_empty());
@@ -444,7 +452,16 @@ mod tests {
             [],
         ).unwrap();
 
-        let session = link_session(&conn, "f1", "claude-123", Some("Test session".into()), None, None, None).unwrap();
+        let session = link_session(
+            &conn,
+            "f1",
+            "claude-123",
+            Some("Test session".into()),
+            None,
+            None,
+            None,
+        )
+        .unwrap();
         assert_eq!(session.feature_id, "f1");
 
         let moved = move_session(&conn, &session.id, "f2").unwrap();

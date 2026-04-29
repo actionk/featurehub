@@ -6,7 +6,8 @@ pub fn get_storage_path(base_path: &Path, feature_id: &str) -> PathBuf {
 
 pub fn ensure_storage_dir(base_path: &Path, feature_id: &str) -> Result<PathBuf, String> {
     let path = get_storage_path(base_path, feature_id);
-    std::fs::create_dir_all(&path).map_err(|e| format!("Failed to create storage directory: {}", e))?;
+    std::fs::create_dir_all(&path)
+        .map_err(|e| format!("Failed to create storage directory: {}", e))?;
     Ok(path)
 }
 
@@ -31,8 +32,7 @@ pub fn copy_file_to_storage(
     let storage_dir = ensure_storage_dir(base_path, feature_id)?;
     let target_dir = if let Some(sub) = subfolder {
         let dir = storage_dir.join(sub);
-        std::fs::create_dir_all(&dir)
-            .map_err(|e| format!("Failed to create subfolder: {}", e))?;
+        std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create subfolder: {}", e))?;
         dir
     } else {
         storage_dir
@@ -67,8 +67,7 @@ pub fn copy_file_to_storage(
         .map_err(|e| format!("Failed to read file metadata: {}", e))?
         .len() as i64;
 
-    std::fs::copy(&source, &dest_path)
-        .map_err(|e| format!("Failed to copy file: {}", e))?;
+    std::fs::copy(&source, &dest_path).map_err(|e| format!("Failed to copy file: {}", e))?;
 
     let dest_str = dest_path
         .strip_prefix(base_path)
@@ -89,15 +88,11 @@ pub fn create_folder_on_disk(
     relative_path: &str,
 ) -> Result<(), String> {
     let dir = get_storage_path(base_path, feature_id).join(relative_path);
-    std::fs::create_dir_all(&dir)
-        .map_err(|e| format!("Failed to create folder on disk: {}", e))?;
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create folder on disk: {}", e))?;
     Ok(())
 }
 
-pub fn move_file_on_disk(
-    old_stored_path: &str,
-    new_dir_path: &str,
-) -> Result<String, String> {
+pub fn move_file_on_disk(old_stored_path: &str, new_dir_path: &str) -> Result<String, String> {
     let old_path = PathBuf::from(old_stored_path);
     let filename = old_path
         .file_name()
@@ -134,8 +129,7 @@ pub fn move_file_on_disk(
     }
 
     if old_path != new_path {
-        std::fs::rename(&old_path, &new_path)
-            .map_err(|e| format!("Failed to move file: {}", e))?;
+        std::fs::rename(&old_path, &new_path).map_err(|e| format!("Failed to move file: {}", e))?;
     }
 
     Ok(new_path.to_string_lossy().to_string())
@@ -156,8 +150,7 @@ pub fn rename_folder_on_disk(old_path: &str, new_path: &str) -> Result<(), Strin
         return Ok(());
     }
 
-    std::fs::rename(&old, &new)
-        .map_err(|e| format!("Failed to rename folder on disk: {}", e))?;
+    std::fs::rename(&old, &new).map_err(|e| format!("Failed to rename folder on disk: {}", e))?;
 
     Ok(())
 }

@@ -18,7 +18,16 @@ pub fn pty_spawn(
     rows: u16,
     cwd: Option<String>,
 ) -> Result<String, String> {
-    crate::terminal::spawn_pty(&app, &terminal_state, &feature_id, shell, args, cols, rows, cwd)
+    crate::terminal::spawn_pty(
+        &app,
+        &terminal_state,
+        &feature_id,
+        shell,
+        args,
+        cols,
+        rows,
+        cwd,
+    )
 }
 
 #[tauri::command]
@@ -41,10 +50,7 @@ pub fn pty_resize(
 }
 
 #[tauri::command]
-pub fn pty_kill(
-    terminal_state: State<'_, TerminalState>,
-    id: String,
-) -> Result<(), String> {
+pub fn pty_kill(terminal_state: State<'_, TerminalState>, id: String) -> Result<(), String> {
     crate::terminal::kill_pty(&terminal_state, &id)
 }
 
@@ -71,34 +77,52 @@ pub fn pty_spawn_session(
 ) -> Result<serde_json::Value, String> {
     let storage = state.storage_path.lock().map_err(|e| e.to_string())?;
     let base = storage.as_deref().ok_or("No active storage path")?;
-    let feature_dir = crate::files::manager::ensure_storage_dir(std::path::Path::new(base), &feature_id)?;
+    let feature_dir =
+        crate::files::manager::ensure_storage_dir(std::path::Path::new(base), &feature_id)?;
 
     let claude_session_id = uuid::Uuid::new_v4().to_string();
 
     let storage_settings = crate::config::load_storage_settings(base).unwrap_or_default();
     let all_servers = storage_settings.all_mcp_servers();
     let conn = state.db.lock().map_err(|e| e.to_string())?;
-    let mut servers = db::mcp_servers::resolve_servers_for_feature(&conn, &feature_id, &all_servers)?;
+    let mut servers =
+        db::mcp_servers::resolve_servers_for_feature(&conn, &feature_id, &all_servers)?;
 
     let settings = crate::config::load_settings().unwrap_or_default();
     if let Some(mcp_bin) = fh_mcp_path(&settings) {
         let mcp_bin_str = mcp_bin.to_string_lossy().replace('\\', "/");
-        servers.insert(0, crate::config::McpServer {
-            name: "featurehub".to_string(),
-            command: mcp_bin_str,
-            args: vec!["--feature".to_string(), feature_id.clone(), "--session-id".to_string(), claude_session_id.clone()],
-            env: std::collections::HashMap::new(),
-            default_enabled: true,
-            url: None,
-        });
+        servers.insert(
+            0,
+            crate::config::McpServer {
+                name: "featurehub".to_string(),
+                command: mcp_bin_str,
+                args: vec![
+                    "--feature".to_string(),
+                    feature_id.clone(),
+                    "--session-id".to_string(),
+                    claude_session_id.clone(),
+                ],
+                env: std::collections::HashMap::new(),
+                default_enabled: true,
+                url: None,
+            },
+        );
     } else {
         eprintln!("[pty_spawn_session] WARNING: fh-mcp binary not found — FeatureHub MCP server will not be available in this session. Run 'cargo build' or install CLI via Settings.");
     }
 
-    eprintln!("[pty_spawn_session] MCP servers configured: {:?}", servers.iter().map(|s| &s.name).collect::<Vec<_>>());
+    eprintln!(
+        "[pty_spawn_session] MCP servers configured: {:?}",
+        servers.iter().map(|s| &s.name).collect::<Vec<_>>()
+    );
 
     let project_path_rel = crate::paths::to_storage_relative(&feature_dir.to_string_lossy(), base);
-    let session_db_id = db::sessions::create_cli_session(&conn, &feature_id, Some(project_path_rel), &claude_session_id)?;
+    let session_db_id = db::sessions::create_cli_session(
+        &conn,
+        &feature_id,
+        Some(project_path_rel),
+        &claude_session_id,
+    )?;
     drop(conn);
 
     let (program, args, cwd) = claude::launcher::build_new_session_args(
@@ -120,7 +144,11 @@ pub fn pty_spawn_session(
         claude::trust::accept_dirs(&trust_dirs);
     }
 
-    eprintln!("[pty_spawn_session] Spawning: {} {}", program, args.join(" "));
+    eprintln!(
+        "[pty_spawn_session] Spawning: {} {}",
+        program,
+        args.join(" ")
+    );
 
     let terminal_id = crate::terminal::spawn_pty(
         &app,
@@ -150,6 +178,7 @@ pub fn pty_resume_session(
     terminal_state: State<'_, TerminalState>,
     app: tauri::AppHandle,
     session_db_id: String,
+    dangerously_skip_permissions: Option<bool>,
     cols: u16,
     rows: u16,
 ) -> Result<serde_json::Value, String> {
@@ -160,7 +189,14 @@ pub fn pty_resume_session(
     if claude_session_id.is_empty() {
         return Err("Session has no claude_session_id".to_string());
     }
-    let project_path_raw = session.project_path
+    if !claude::scanner::session_has_transcript(claude_session_id)
+        && !claude::scanner::is_session_active(claude_session_id)
+    {
+        db::sessions::unlink_session(&conn, &session_db_id)?;
+        return Err("Session was empty and has been removed.".to_string());
+    }
+    let project_path_raw = session
+        .project_path
         .as_deref()
         .ok_or("Session has no project_path")?;
 
@@ -176,32 +212,40 @@ pub fn pty_resume_session(
         None => crate::config::StorageSettings::default(),
     };
     let all_servers = storage_settings.all_mcp_servers();
-    let mut servers = db::mcp_servers::resolve_servers_for_feature(&conn, &session.feature_id, &all_servers)?;
+    let mut servers =
+        db::mcp_servers::resolve_servers_for_feature(&conn, &session.feature_id, &all_servers)?;
 
     let settings = crate::config::load_settings().unwrap_or_default();
     if let Some(mcp_bin) = fh_mcp_path(&settings) {
         let mcp_bin_str = mcp_bin.to_string_lossy().replace('\\', "/");
-        servers.insert(0, crate::config::McpServer {
-            name: "featurehub".to_string(),
-            command: mcp_bin_str,
-            args: vec![
-                "--feature".to_string(),
-                session.feature_id.clone(),
-                "--session-id".to_string(),
-                claude_session_id.clone(),
-            ],
-            env: std::collections::HashMap::new(),
-            default_enabled: true,
-            url: None,
-        });
+        servers.insert(
+            0,
+            crate::config::McpServer {
+                name: "featurehub".to_string(),
+                command: mcp_bin_str,
+                args: vec![
+                    "--feature".to_string(),
+                    session.feature_id.clone(),
+                    "--session-id".to_string(),
+                    claude_session_id.clone(),
+                ],
+                env: std::collections::HashMap::new(),
+                default_enabled: true,
+                url: None,
+            },
+        );
     } else {
         eprintln!("[pty_resume_session] WARNING: fh-mcp binary not found — FeatureHub MCP server will not be available in this session.");
     }
 
-    eprintln!("[pty_resume_session] MCP servers configured: {:?}", servers.iter().map(|s| &s.name).collect::<Vec<_>>());
+    eprintln!(
+        "[pty_resume_session] MCP servers configured: {:?}",
+        servers.iter().map(|s| &s.name).collect::<Vec<_>>()
+    );
 
     let dirs = db::directories::get_directories(&conn, &session.feature_id)?;
-    let ready_dirs: Vec<String> = dirs.iter()
+    let ready_dirs: Vec<String> = dirs
+        .iter()
         .filter(|d| d.clone_status.as_deref().unwrap_or("ready") == "ready")
         .map(|d| match sp.as_ref() {
             Some(base) => crate::paths::resolve_path_string(&d.path, base),
@@ -216,6 +260,7 @@ pub fn pty_resume_session(
         project_path,
         &ready_dirs,
         &servers,
+        dangerously_skip_permissions.unwrap_or(false),
     )?;
 
     {
@@ -245,11 +290,16 @@ pub fn pty_resume_session(
         conn.execute(
             "UPDATE sessions SET started_at = ?1 WHERE id = ?2",
             rusqlite::params![now, session_db_id],
-        ).ok();
+        )
+        .ok();
     }
 
     // Store session metadata so terminals can be restored after webview reload
-    let label = session.title.as_deref().unwrap_or("Resumed Session").to_string();
+    let label = session
+        .title
+        .as_deref()
+        .unwrap_or("Resumed Session")
+        .to_string();
     crate::terminal::set_session_metadata(&terminal_state, &terminal_id, &session_db_id, &label)?;
 
     Ok(serde_json::json!({
@@ -264,7 +314,14 @@ pub fn finish_embedded_session(
     session_db_id: String,
 ) -> Result<(), String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::sessions::finish_session(&conn, &session_db_id, None, None, None)
+    let session = db::sessions::get_session(&conn, &session_db_id)?;
+    if !session.claude_session_id.is_empty()
+        && !claude::scanner::session_has_transcript(&session.claude_session_id)
+    {
+        db::sessions::unlink_session(&conn, &session_db_id)
+    } else {
+        db::sessions::finish_session(&conn, &session_db_id, None, None, None)
+    }
 }
 
 #[tauri::command]
@@ -304,7 +361,11 @@ pub fn cleanup_orphaned_sessions(state: State<'_, AppState>) -> Result<u32, Stri
                 |row| row.get(0),
             );
             if let Ok(session_id) = result {
-                let _ = db::sessions::finish_session(&conn, &session_id, None, None, None);
+                if claude::scanner::session_has_transcript(claude_id) {
+                    let _ = db::sessions::finish_session(&conn, &session_id, None, None, None);
+                } else {
+                    let _ = db::sessions::unlink_session(&conn, &session_id);
+                }
                 cleaned += 1;
             }
         }

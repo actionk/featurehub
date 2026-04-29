@@ -20,8 +20,10 @@ pub fn clone_repo(url: &str, target_dir: &Path) -> Result<(), String> {
     let output = Command::new("git")
         .args([
             "clone",
-            "--depth", "1",
-            "-c", "core.longpaths=true",
+            "--depth",
+            "1",
+            "-c",
+            "core.longpaths=true",
             url,
             &target_dir.to_string_lossy(),
         ])
@@ -121,7 +123,9 @@ pub fn create_branch(dir: &Path, name: &str) -> Result<(), String> {
         return Err(format!("Not a git repository: {}", dir.display()));
     }
     if is_working_tree_dirty(dir)? {
-        return Err("Cannot create branch: uncommitted changes. Commit or stash first.".to_string());
+        return Err(
+            "Cannot create branch: uncommitted changes. Commit or stash first.".to_string(),
+        );
     }
 
     // Check branch doesn't already exist

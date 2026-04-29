@@ -128,11 +128,7 @@ pub fn index_session(
     Ok(())
 }
 
-pub fn index_note(
-    conn: &Connection,
-    feature_id: &str,
-    content: &str,
-) -> Result<(), String> {
+pub fn index_note(conn: &Connection, feature_id: &str, content: &str) -> Result<(), String> {
     conn.execute(
         "DELETE FROM search_index WHERE entity_type = 'note' AND feature_id = ?1",
         params![feature_id],
@@ -239,9 +235,7 @@ pub fn rebuild_search_index(conn: &Connection) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let features: Vec<(String, String, Option<String>)> = stmt
-        .query_map([], |row| {
-            Ok((row.get(0)?, row.get(1)?, row.get(2)?))
-        })
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
         .map_err(|e| e.to_string())?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
@@ -292,9 +286,7 @@ pub fn rebuild_search_index(conn: &Connection) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let notes: Vec<(String, String)> = stmt
-        .query_map([], |row| {
-            Ok((row.get(0)?, row.get(1)?))
-        })
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
         .map_err(|e| e.to_string())?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
@@ -309,9 +301,7 @@ pub fn rebuild_search_index(conn: &Connection) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let files: Vec<(String, String, String)> = stmt
-        .query_map([], |row| {
-            Ok((row.get(0)?, row.get(1)?, row.get(2)?))
-        })
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
         .map_err(|e| e.to_string())?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;

@@ -46,7 +46,14 @@ pub fn update_task(
     description: Option<String>,
 ) -> Result<db::tasks::Task, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::tasks::update_task(&conn, &id, title.as_deref(), done, external_status.as_deref(), description.as_deref())
+    db::tasks::update_task(
+        &conn,
+        &id,
+        title.as_deref(),
+        done,
+        external_status.as_deref(),
+        description.as_deref(),
+    )
 }
 
 #[tauri::command]

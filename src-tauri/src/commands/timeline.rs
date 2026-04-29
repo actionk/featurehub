@@ -62,9 +62,7 @@ pub fn get_timeline(
 }
 
 #[tauri::command]
-pub fn get_global_timeline(
-    state: State<'_, AppState>,
-) -> Result<Vec<GlobalTimelineEvent>, String> {
+pub fn get_global_timeline(state: State<'_, AppState>) -> Result<Vec<GlobalTimelineEvent>, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
 
     let sql = "

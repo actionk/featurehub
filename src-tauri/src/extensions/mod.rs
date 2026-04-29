@@ -64,7 +64,10 @@ impl ExtensionRegistry {
         let entries = match std::fs::read_dir(extensions_dir) {
             Ok(e) => e,
             Err(e) => {
-                eprintln!("[extensions] Failed to read dir {:?}: {}", extensions_dir, e);
+                eprintln!(
+                    "[extensions] Failed to read dir {:?}: {}",
+                    extensions_dir, e
+                );
                 return;
             }
         };
@@ -226,7 +229,10 @@ pub fn extension_setting_bool(
     let path = storage_path.join("settings.json");
     let text = std::fs::read_to_string(&path).ok()?;
     let v: serde_json::Value = serde_json::from_str(&text).ok()?;
-    v.get("extension_settings")?.get(settings_key)?.get(key)?.as_bool()
+    v.get("extension_settings")?
+        .get(settings_key)?
+        .get(key)?
+        .as_bool()
 }
 
 pub fn dispatch_event(
@@ -269,7 +275,10 @@ mod tests {
     }
 
     fn valid_json(id: &str) -> String {
-        format!(r#"{{"id": "{}", "name": "Ext {}", "version": "1.0.0"}}"#, id, id)
+        format!(
+            r#"{{"id": "{}", "name": "Ext {}", "version": "1.0.0"}}"#,
+            id, id
+        )
     }
 
     #[test]
@@ -302,7 +311,11 @@ mod tests {
     #[test]
     fn skips_unprefixed_table() {
         let tmp = TempDir::new().unwrap();
-        write_manifest(&tmp, "bad-table", r#"{"id": "x", "name": "x", "version": "1.0.0", "tables": [{"name": "no_prefix", "columns": [], "indexes": []}]}"#);
+        write_manifest(
+            &tmp,
+            "bad-table",
+            r#"{"id": "x", "name": "x", "version": "1.0.0", "tables": [{"name": "no_prefix", "columns": [], "indexes": []}]}"#,
+        );
         let registry = ExtensionRegistry::load_from_dir(tmp.path());
         assert_eq!(registry.extensions.len(), 0);
     }
@@ -316,10 +329,14 @@ mod tests {
     #[test]
     fn find_tool_returns_matching_extension_and_decl() {
         let tmp = TempDir::new().unwrap();
-        write_manifest(&tmp, "my-ext", r#"{
+        write_manifest(
+            &tmp,
+            "my-ext",
+            r#"{
             "id": "my-ext", "name": "My Ext", "version": "1.0.0",
             "tools": [{"name": "my_tool", "description": "test", "handler": "h.js", "params": {}}]
-        }"#);
+        }"#,
+        );
         let registry = ExtensionRegistry::load_from_dir(tmp.path());
         let result = registry.find_tool("my_tool");
         assert!(result.is_some());

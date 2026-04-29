@@ -3,6 +3,7 @@
   import { duplicateFeature, togglePinFeature, setFeatureArchived, updateFeature, deleteFeature, setFeatureParent, reorderFeatures, createFeatureGroup, updateFeatureGroup, deleteFeatureGroup, reorderFeatureGroups, setFeatureGroup, updateStorageIcon, getStorages } from "../api/tauri";
   import StorageSelector from "./StorageSelector.svelte";
   import { formatRelativeTime } from "../utils/format";
+  import { getTerminalSidebarStatus } from "../utils/terminalStatus";
   import { getActiveTerminals, getViewingTerminal, requestShowOverview } from "../stores/terminals.svelte";
   import { getActiveCountForFeature, isAnySessionWaitingForFeature } from "../stores/sessionActivity.svelte";
 
@@ -994,8 +995,8 @@
                         <span class="sub-session__label">{term.label}</span>
                         {#if term.needsInput}
                           <span class="aurora-pill aurora-pill--warn aurora-pill--sm aurora-pill--no-dot">Waiting</span>
-                        {:else if term.statusLine}
-                          <span class="sub-session__meta">{term.statusLine}</span>
+                        {:else}
+                          <span class="sub-session__meta">{getTerminalSidebarStatus(term)}</span>
                         {/if}
                         <button
                           class="sub-session__finish"

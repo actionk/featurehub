@@ -52,7 +52,12 @@ pub fn scan_claude_sessions() -> Result<Vec<ScannedSession>, String> {
         let decoded_project_path = decode_project_dir_name(&project_name);
 
         // Look for session directories or session files within the project
-        let session_results = scan_project_sessions(&project_path, &decoded_project_path, &project_name, &active_ids);
+        let session_results = scan_project_sessions(
+            &project_path,
+            &decoded_project_path,
+            &project_name,
+            &active_ids,
+        );
         if let Ok(mut project_sessions) = session_results {
             sessions.append(&mut project_sessions);
         }
@@ -175,6 +180,27 @@ pub fn find_jsonl_for_session(
     None
 }
 
+/// Check whether a session has a non-empty transcript under a Claude projects directory.
+pub fn session_has_transcript_in_projects(
+    projects_dir: &std::path::Path,
+    session_id: &str,
+) -> bool {
+    find_jsonl_for_session(projects_dir, session_id)
+        .and_then(|path| std::fs::metadata(path).ok())
+        .is_some_and(|metadata| metadata.len() > 0)
+}
+
+/// Check whether a session has a non-empty transcript in the user's Claude projects directory.
+pub fn session_has_transcript(session_id: &str) -> bool {
+    let home = match dirs::home_dir() {
+        Some(home) => home,
+        None => return false,
+    };
+    let projects_dir = home.join(".claude").join("projects");
+
+    session_has_transcript_in_projects(&projects_dir, session_id)
+}
+
 /// Extract title and summary for a session from Claude Code's on-disk files.
 /// Priority: sessions-index.json summary → session-memory .md → JSONL first user message.
 pub fn find_session_title(session_id: &str) -> (Option<String>, Option<String>) {
@@ -187,14 +213,20 @@ pub fn find_session_title(session_id: &str) -> (Option<String>, Option<String>) 
         return (None, None);
     }
 
-    for entry in std::fs::read_dir(&projects_dir).ok().into_iter().flatten().flatten() {
+    for entry in std::fs::read_dir(&projects_dir)
+        .ok()
+        .into_iter()
+        .flatten()
+        .flatten()
+    {
         let project_dir = entry.path();
         if !project_dir.is_dir() {
             continue;
         }
 
         // Check sessions-index.json first (Claude Code's own title)
-        let (index_title, _first_prompt) = session_parser::find_title_in_sessions_index(&project_dir, session_id);
+        let (index_title, _first_prompt) =
+            session_parser::find_title_in_sessions_index(&project_dir, session_id);
         if index_title.is_some() {
             return (index_title, None);
         }
@@ -400,9 +432,7 @@ fn scan_project_sessions(
                     };
 
                     let sub_path = sub_entry.path();
-                    if sub_path.is_file()
-                        && sub_path.extension().is_some_and(|ext| ext == "json")
-                    {
+                    if sub_path.is_file() && sub_path.extension().is_some_and(|ext| ext == "json") {
                         let session_id = sub_path
                             .file_stem()
                             .unwrap_or_default()
@@ -420,9 +450,13 @@ fn scan_project_sessions(
 
                         // Try sessions-index.json first (already loaded)
                         let title = index_titles.get(&session_id).cloned().or_else(|| {
-                            let summary_path = path.join("session-memory").join(format!("{}.md", session_id));
+                            let summary_path = path
+                                .join("session-memory")
+                                .join(format!("{}.md", session_id));
                             if summary_path.exists() {
-                                if let Ok(parsed) = session_parser::parse_session_summary(&summary_path) {
+                                if let Ok(parsed) =
+                                    session_parser::parse_session_summary(&summary_path)
+                                {
                                     if parsed.title.is_some() {
                                         return parsed.title;
                                     }
@@ -466,10 +500,39 @@ mod tests {
         std::fs::write(&jsonl_path, "{}").unwrap();
 
         // Prime the cache
-        cache.lock().unwrap().insert("test-session".to_string(), jsonl_path.clone());
+        cache
+            .lock()
+            .unwrap()
+            .insert("test-session".to_string(), jsonl_path.clone());
 
         // Should find from cache
         let result = find_jsonl_with_cache(&cache, tmp.path(), "test-session");
         assert_eq!(result, Some(jsonl_path));
+    }
+
+    #[test]
+    fn test_session_has_transcript_requires_non_empty_jsonl() {
+        let tmp = TempDir::new().unwrap();
+        let project_dir = tmp.path().join("project");
+        std::fs::create_dir(&project_dir).unwrap();
+
+        assert!(!session_has_transcript_in_projects(
+            tmp.path(),
+            "empty-session"
+        ));
+
+        let empty_jsonl = project_dir.join("empty-session.jsonl");
+        std::fs::write(&empty_jsonl, "").unwrap();
+        assert!(!session_has_transcript_in_projects(
+            tmp.path(),
+            "empty-session"
+        ));
+
+        let non_empty_jsonl = project_dir.join("real-session.jsonl");
+        std::fs::write(&non_empty_jsonl, "{}\n").unwrap();
+        assert!(session_has_transcript_in_projects(
+            tmp.path(),
+            "real-session"
+        ));
     }
 }

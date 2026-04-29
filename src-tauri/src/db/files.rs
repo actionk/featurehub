@@ -122,7 +122,11 @@ pub fn open_file(conn: &Connection, id: &str) -> Result<String, String> {
     Ok(stored_path)
 }
 
-pub fn move_file(conn: &Connection, file_id: &str, folder_id: Option<&str>) -> Result<FileEntry, String> {
+pub fn move_file(
+    conn: &Connection,
+    file_id: &str,
+    folder_id: Option<&str>,
+) -> Result<FileEntry, String> {
     conn.execute(
         "UPDATE files SET folder_id = ?1 WHERE id = ?2",
         params![folder_id, file_id],
@@ -151,7 +155,11 @@ pub fn move_file(conn: &Connection, file_id: &str, folder_id: Option<&str>) -> R
     Ok(entry)
 }
 
-pub fn rename_file(conn: &Connection, file_id: &str, new_filename: &str) -> Result<FileEntry, String> {
+pub fn rename_file(
+    conn: &Connection,
+    file_id: &str,
+    new_filename: &str,
+) -> Result<FileEntry, String> {
     conn.execute(
         "UPDATE files SET filename = ?1 WHERE id = ?2",
         params![new_filename, file_id],
@@ -182,7 +190,11 @@ pub fn rename_file(conn: &Connection, file_id: &str, new_filename: &str) -> Resu
     Ok(entry)
 }
 
-pub fn update_stored_path(conn: &Connection, file_id: &str, new_stored_path: &str) -> Result<(), String> {
+pub fn update_stored_path(
+    conn: &Connection,
+    file_id: &str,
+    new_stored_path: &str,
+) -> Result<(), String> {
     conn.execute(
         "UPDATE files SET stored_path = ?1 WHERE id = ?2",
         params![new_stored_path, file_id],

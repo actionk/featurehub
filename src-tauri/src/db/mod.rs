@@ -4,22 +4,22 @@ pub mod feature_groups;
 pub mod features;
 pub mod files;
 pub mod folders;
+pub mod knowledge;
 pub mod links;
 pub mod mcp_servers;
 pub mod notes;
-pub mod skills;
 pub mod plans;
 pub mod search;
 pub mod sessions;
+pub mod skills;
 pub mod tags;
 pub mod tasks;
-pub mod knowledge;
 
 #[cfg(test)]
 pub mod test_utils;
 
-use std::path::Path;
 use rusqlite::{Connection, Result};
+use std::path::Path;
 
 pub fn initialize(conn: &Connection) -> Result<()> {
     conn.execute_batch("PRAGMA journal_mode=WAL;")?;
@@ -190,13 +190,17 @@ pub fn initialize(conn: &Connection) -> Result<()> {
     }
 
     // Migration: add description column to features
-    let has_description = conn.prepare("SELECT description FROM features LIMIT 0").is_ok();
+    let has_description = conn
+        .prepare("SELECT description FROM features LIMIT 0")
+        .is_ok();
     if !has_description {
         conn.execute_batch("ALTER TABLE features ADD COLUMN description TEXT;")?;
     }
 
     // Migration: add description column to links
-    let has_link_desc = conn.prepare("SELECT description FROM links LIMIT 0").is_ok();
+    let has_link_desc = conn
+        .prepare("SELECT description FROM links LIMIT 0")
+        .is_ok();
     if !has_link_desc {
         conn.execute_batch("ALTER TABLE links ADD COLUMN description TEXT;")?;
     }
@@ -214,23 +218,33 @@ pub fn initialize(conn: &Connection) -> Result<()> {
     }
 
     // Migration: add archived column to features
-    let has_archived = conn.prepare("SELECT archived FROM features LIMIT 0").is_ok();
+    let has_archived = conn
+        .prepare("SELECT archived FROM features LIMIT 0")
+        .is_ok();
     if !has_archived {
         conn.execute_batch("ALTER TABLE features ADD COLUMN archived INTEGER NOT NULL DEFAULT 0;")?;
     }
 
     // Migration: add repo clone columns to directories
-    let has_repo_url = conn.prepare("SELECT repo_url FROM directories LIMIT 0").is_ok();
+    let has_repo_url = conn
+        .prepare("SELECT repo_url FROM directories LIMIT 0")
+        .is_ok();
     if !has_repo_url {
         conn.execute_batch("ALTER TABLE directories ADD COLUMN repo_url TEXT;")?;
-        conn.execute_batch("ALTER TABLE directories ADD COLUMN clone_status TEXT DEFAULT 'ready';")?;
+        conn.execute_batch(
+            "ALTER TABLE directories ADD COLUMN clone_status TEXT DEFAULT 'ready';",
+        )?;
         conn.execute_batch("ALTER TABLE directories ADD COLUMN clone_error TEXT;")?;
     }
 
     // Migration: add title_manual flag to sessions (tracks user renames vs auto-discovered titles)
-    let has_title_manual = conn.prepare("SELECT title_manual FROM sessions LIMIT 0").is_ok();
+    let has_title_manual = conn
+        .prepare("SELECT title_manual FROM sessions LIMIT 0")
+        .is_ok();
     if !has_title_manual {
-        conn.execute_batch("ALTER TABLE sessions ADD COLUMN title_manual INTEGER NOT NULL DEFAULT 0;")?;
+        conn.execute_batch(
+            "ALTER TABLE sessions ADD COLUMN title_manual INTEGER NOT NULL DEFAULT 0;",
+        )?;
     }
 
     // Feature branches
@@ -301,11 +315,15 @@ pub fn initialize(conn: &Connection) -> Result<()> {
     )?;
 
     // Migration: add parent_id column to features for hierarchy
-    let has_parent_id = conn.prepare("SELECT parent_id FROM features LIMIT 0").is_ok();
+    let has_parent_id = conn
+        .prepare("SELECT parent_id FROM features LIMIT 0")
+        .is_ok();
     if !has_parent_id {
         conn.execute_batch("ALTER TABLE features ADD COLUMN parent_id TEXT;")?;
     }
-    conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_features_parent_id ON features(parent_id);")?;
+    conn.execute_batch(
+        "CREATE INDEX IF NOT EXISTS idx_features_parent_id ON features(parent_id);",
+    )?;
 
     // Feature groups for organizing features in the sidebar
     conn.execute_batch(
@@ -321,7 +339,9 @@ pub fn initialize(conn: &Connection) -> Result<()> {
     )?;
 
     // Migration: add group_id column to features
-    let has_group_id = conn.prepare("SELECT group_id FROM features LIMIT 0").is_ok();
+    let has_group_id = conn
+        .prepare("SELECT group_id FROM features LIMIT 0")
+        .is_ok();
     if !has_group_id {
         conn.execute_batch("ALTER TABLE features ADD COLUMN group_id TEXT REFERENCES feature_groups(id) ON DELETE SET NULL;")?;
     }
@@ -378,18 +398,16 @@ pub fn migrate_to_relative_paths(conn: &Connection, storage_base: &Path) {
             return Some(rel.to_string_lossy().replace('\\', "/"));
         }
         // Fallback: extract workspaces/... from any absolute path
-        find_workspaces_relative(p)
-            .map(|rel| rel.to_string_lossy().replace('\\', "/"))
+        find_workspaces_relative(p).map(|rel| rel.to_string_lossy().replace('\\', "/"))
     };
 
     // Migrate files.stored_path
     if let Ok(mut stmt) = conn.prepare("SELECT id, stored_path FROM files") {
-        let rows: Vec<(String, String)> = match stmt
-            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
-        {
-            Ok(mapped) => mapped.filter_map(|r| r.ok()).collect(),
-            Err(_) => Vec::new(),
-        };
+        let rows: Vec<(String, String)> =
+            match stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?))) {
+                Ok(mapped) => mapped.filter_map(|r| r.ok()).collect(),
+                Err(_) => Vec::new(),
+            };
         for (id, old_path) in rows {
             if let Some(rel) = to_relative(&old_path) {
                 let _ = conn.execute(
@@ -401,15 +419,14 @@ pub fn migrate_to_relative_paths(conn: &Connection, storage_base: &Path) {
     }
 
     // Migrate directories.path — only cloned repos (repo_url IS NOT NULL)
-    if let Ok(mut stmt) = conn.prepare(
-        "SELECT id, path FROM directories WHERE repo_url IS NOT NULL AND repo_url != ''"
-    ) {
-        let rows: Vec<(String, String)> = match stmt
-            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
-        {
-            Ok(mapped) => mapped.filter_map(|r| r.ok()).collect(),
-            Err(_) => Vec::new(),
-        };
+    if let Ok(mut stmt) = conn
+        .prepare("SELECT id, path FROM directories WHERE repo_url IS NOT NULL AND repo_url != ''")
+    {
+        let rows: Vec<(String, String)> =
+            match stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?))) {
+                Ok(mapped) => mapped.filter_map(|r| r.ok()).collect(),
+                Err(_) => Vec::new(),
+            };
         for (id, old_path) in rows {
             if let Some(rel) = to_relative(&old_path) {
                 let _ = conn.execute(
@@ -421,15 +438,14 @@ pub fn migrate_to_relative_paths(conn: &Connection, storage_base: &Path) {
     }
 
     // Migrate sessions.project_path
-    if let Ok(mut stmt) = conn.prepare(
-        "SELECT id, project_path FROM sessions WHERE project_path IS NOT NULL"
-    ) {
-        let rows: Vec<(String, String)> = match stmt
-            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
-        {
-            Ok(mapped) => mapped.filter_map(|r| r.ok()).collect(),
-            Err(_) => Vec::new(),
-        };
+    if let Ok(mut stmt) =
+        conn.prepare("SELECT id, project_path FROM sessions WHERE project_path IS NOT NULL")
+    {
+        let rows: Vec<(String, String)> =
+            match stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?))) {
+                Ok(mapped) => mapped.filter_map(|r| r.ok()).collect(),
+                Err(_) => Vec::new(),
+            };
         for (id, old_path) in rows {
             if let Some(rel) = to_relative(&old_path) {
                 let _ = conn.execute(

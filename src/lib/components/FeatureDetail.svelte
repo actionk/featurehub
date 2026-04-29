@@ -23,6 +23,7 @@
   import "../modules"; // trigger module registration
   import { extensionTabsReady } from "../modules";
   import { formatRelativeTime } from "../utils/format";
+  import { createLatestGuard } from "../utils/asyncGuards";
 
   let {
     featureId,
@@ -73,6 +74,8 @@
   let showDeleteConfirm = $state(false);
   let copiedId = $state(false);
   let copiedPath = $state(false);
+  const featureDataGuard = createLatestGuard();
+  const sessionGuard = createLatestGuard();
 
   function switchTab(value: string) {
     activeTab = value;
@@ -134,9 +137,9 @@
     const tab = saved || "ai";
     activeTab = tab;
     // Pre-render tabs marked as preload + the active tab
-    const preloadIds = tabs.filter(t => t.preload).map(t => t.id);
+    const preloadIds = getRegisteredTabs().filter(t => t.preload).map(t => t.id);
     visitedTabs = new Set([tab, ...preloadIds]);
-    loadFeatureData();
+    loadFeatureData({ includeSessions: true });
   });
 
   // Apply initial tab override (e.g. from session panel click or search navigation).
@@ -148,11 +151,14 @@
     }
   });
 
-  async function loadFeatureData() {
+  async function loadFeatureData({ includeSessions = false } = {}) {
+    const fid = featureId;
+    const token = featureDataGuard.next();
     loading = true;
     try {
       // Single IPC call for feature + tags + tasks + plans + note (one DB lock)
-      const data = await getFeatureData(featureId);
+      const data = await getFeatureData(fid);
+      if (!featureDataGuard.isCurrent(token) || fid !== featureId) return;
       feature = data.feature;
       allTags = data.all_tags;
       tasks = data.tasks;
@@ -161,15 +167,22 @@
     } catch (e) {
       console.error("Failed to load feature:", e);
     } finally {
-      loading = false;
+      if (featureDataGuard.isCurrent(token) && fid === featureId) {
+        loading = false;
+      }
     }
     // Sessions loaded separately — they do expensive disk I/O for title scanning
-    getSessions(featureId).then(s => sessions = s).catch(() => sessions = []);
+    if (includeSessions && featureDataGuard.isCurrent(token) && fid === featureId) {
+      refreshSessions(fid);
+    }
   }
 
   async function refresh() {
+    const fid = featureId;
+    const token = featureDataGuard.next();
     try {
-      const data = await getFeatureData(featureId);
+      const data = await getFeatureData(fid);
+      if (!featureDataGuard.isCurrent(token) || fid !== featureId) return;
       feature = data.feature;
       allTags = data.all_tags;
       tasks = data.tasks;
@@ -182,7 +195,7 @@
   // Refresh when notified by parent (MCP notification)
   $effect(() => {
     if (refreshFeatureId === featureId) {
-      loadFeatureData();
+      loadFeatureData({ includeSessions: true });
       onRefreshHandled?.();
     }
   });
@@ -194,13 +207,15 @@
   // Only poll when this tab is active to reduce IPC load
   $effect(() => {
     if (!isActive) return;
-    // Refresh immediately when becoming active (may have missed changes)
-    loadFeatureData();
     const interval = setInterval(async () => {
+      const fid = featureId;
       try {
-        const fresh = await getFeature(featureId);
+        const fresh = await getFeature(fid);
+        if (fid !== featureId) return;
         if (fresh.updated_at !== feature?.updated_at) {
-          const data = await getFeatureData(featureId);
+          const token = featureDataGuard.next();
+          const data = await getFeatureData(fid);
+          if (!featureDataGuard.isCurrent(token) || fid !== featureId) return;
           feature = data.feature;
           allTags = data.all_tags;
           tasks = data.tasks;
@@ -213,9 +228,19 @@
     return () => clearInterval(interval);
   });
 
-  async function refreshSessions() {
-    try { sessions = await getSessions(featureId); } catch { sessions = []; }
-    onSessionsChanged?.();
+  async function refreshSessions(fid = featureId) {
+    const token = sessionGuard.next();
+    try {
+      const freshSessions = await getSessions(fid);
+      if (!sessionGuard.isCurrent(token) || fid !== featureId) return;
+      sessions = freshSessions;
+    } catch {
+      if (!sessionGuard.isCurrent(token) || fid !== featureId) return;
+      sessions = [];
+    }
+    if (fid === featureId) {
+      onSessionsChanged?.();
+    }
   }
 
   function toggleEditTitle() {
@@ -507,7 +532,7 @@
     {#each tabs as tab (tab.id)}
       {#if visitedTabs.has(tab.id)}
         <div class="tab-panel" style="display: {activeTab === tab.id ? (tab.panelStyle ? '' : 'block') : 'none'}; {activeTab === tab.id && tab.panelStyle ? tab.panelStyle : ''}">
-          <tab.component {...tabContext} {...(tab.extraProps ?? {})} />
+          <tab.component {...tabContext} isTabActive={isActive && activeTab === tab.id} {...(tab.extraProps ?? {})} />
         </div>
       {/if}
     {/each}
@@ -556,4 +581,3 @@
     </div>
   </div>
 {/if}
-

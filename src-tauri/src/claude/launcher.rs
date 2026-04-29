@@ -40,8 +40,7 @@ fn build_mcp_config_file(servers: &[McpServer]) -> Result<Option<std::path::Path
     let path = config_dir.join("session-mcp.json");
     let data = serde_json::to_string_pretty(&config)
         .map_err(|e| format!("Failed to serialize MCP config: {}", e))?;
-    std::fs::write(&path, data)
-        .map_err(|e| format!("Failed to write MCP config: {}", e))?;
+    std::fs::write(&path, data).map_err(|e| format!("Failed to write MCP config: {}", e))?;
 
     Ok(Some(path))
 }
@@ -81,7 +80,13 @@ pub fn push_default_allowed_tools(args: &mut Vec<String>) {
 }
 
 /// Returns (program, args, cwd) for spawning claude in a PTY for resume.
-pub fn build_resume_args(session_id: &str, project_path: &str, directories: &[String], servers: &[McpServer]) -> Result<(String, Vec<String>, String), String> {
+pub fn build_resume_args(
+    session_id: &str,
+    project_path: &str,
+    directories: &[String],
+    servers: &[McpServer],
+    dangerously_skip_permissions: bool,
+) -> Result<(String, Vec<String>, String), String> {
     let mcp_config_path = build_mcp_config_file(servers)?;
 
     let mut args = vec!["--resume".to_string(), session_id.to_string()];
@@ -89,7 +94,11 @@ pub fn build_resume_args(session_id: &str, project_path: &str, directories: &[St
         args.push("--mcp-config".to_string());
         args.push(mcp_path.to_string_lossy().to_string());
     }
-    push_default_allowed_tools(&mut args);
+    if dangerously_skip_permissions {
+        args.push("--dangerously-skip-permissions".to_string());
+    } else {
+        push_default_allowed_tools(&mut args);
+    }
 
     for dir in directories {
         args.push("--add-dir".to_string());
@@ -139,10 +148,19 @@ pub fn build_new_session_args(
     Ok(("claude".to_string(), args, feature_dir.to_string()))
 }
 
-pub fn resume_session(session_id: &str, project_path: &str, directories: &[String], servers: &[McpServer]) -> Result<(), String> {
+pub fn resume_session(
+    session_id: &str,
+    project_path: &str,
+    directories: &[String],
+    servers: &[McpServer],
+) -> Result<(), String> {
     let mcp_config_path = build_mcp_config_file(servers)?;
 
-    let mut claude_args = vec!["claude".to_string(), "--resume".to_string(), session_id.to_string()];
+    let mut claude_args = vec![
+        "claude".to_string(),
+        "--resume".to_string(),
+        session_id.to_string(),
+    ];
     if let Some(ref mcp_path) = mcp_config_path {
         claude_args.push("--mcp-config".to_string());
         claude_args.push(mcp_path.to_string_lossy().to_string());
@@ -218,13 +236,11 @@ pub fn resume_session(session_id: &str, project_path: &str, directories: &[Strin
             for a in args {
                 cmd.arg(a);
             }
-            cmd.arg("bash")
-                .arg("-c")
-                .arg(format!(
-                    "cd {} && {}",
-                    shell_quote(project_path),
-                    args_str
-                ));
+            cmd.arg("bash").arg("-c").arg(format!(
+                "cd {} && {}",
+                shell_quote(project_path),
+                args_str
+            ));
 
             if cmd.spawn().is_ok() {
                 launched = true;
@@ -252,7 +268,11 @@ pub fn start_new_session(
 
     let mcp_config_path = build_mcp_config_file(servers)?;
 
-    let mut claude_args = vec!["claude".to_string(), "--session-id".to_string(), session_id.to_string()];
+    let mut claude_args = vec![
+        "claude".to_string(),
+        "--session-id".to_string(),
+        session_id.to_string(),
+    ];
     if let Some(ref mcp_path) = mcp_config_path {
         claude_args.push("--mcp-config".to_string());
         claude_args.push(mcp_path.to_string_lossy().to_string());
@@ -342,11 +362,7 @@ pub fn start_new_session(
             }
             cmd.arg("bash")
                 .arg("-c")
-                .arg(format!(
-                    "cd {} && {}",
-                    shell_quote(work_dir),
-                    args_str
-                ));
+                .arg(format!("cd {} && {}", shell_quote(work_dir), args_str));
 
             if cmd.spawn().is_ok() {
                 launched = true;
@@ -360,4 +376,42 @@ pub fn start_new_session(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_resume_args_uses_default_allowed_tools_without_full_access() {
+        let (_program, args, cwd) = build_resume_args(
+            "session-1",
+            "C:/work/project",
+            &["C:/work/repo".to_string()],
+            &[],
+            false,
+        )
+        .expect("resume args");
+
+        assert_eq!(cwd, "C:/work/project");
+        assert!(args.contains(&"--resume".to_string()));
+        assert!(args.contains(&"session-1".to_string()));
+        assert!(args.contains(&"--allowedTools".to_string()));
+        assert!(!args.contains(&"--dangerously-skip-permissions".to_string()));
+    }
+
+    #[test]
+    fn build_resume_args_can_skip_permissions_for_full_access() {
+        let (_program, args, _cwd) = build_resume_args(
+            "session-1",
+            "C:/work/project",
+            &["C:/work/repo".to_string()],
+            &[],
+            true,
+        )
+        .expect("resume args");
+
+        assert!(args.contains(&"--dangerously-skip-permissions".to_string()));
+        assert!(!args.contains(&"--allowedTools".to_string()));
+    }
 }

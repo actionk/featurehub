@@ -9,7 +9,10 @@ pub struct ParsedSession {
 /// Look up a session's title from Claude Code's `sessions-index.json` file.
 /// Returns (summary_as_title, first_prompt) — `summary` is the Claude-generated
 /// session name (e.g. "Add moderator popup showing current/next blank word").
-pub fn find_title_in_sessions_index(project_dir: &Path, session_id: &str) -> (Option<String>, Option<String>) {
+pub fn find_title_in_sessions_index(
+    project_dir: &Path,
+    session_id: &str,
+) -> (Option<String>, Option<String>) {
     let index_path = project_dir.join("sessions-index.json");
     let content = match std::fs::read_to_string(&index_path) {
         Ok(c) => c,
@@ -25,7 +28,10 @@ pub fn find_title_in_sessions_index(project_dir: &Path, session_id: &str) -> (Op
     };
     for entry in entries {
         if entry.get("sessionId").and_then(|v| v.as_str()) == Some(session_id) {
-            let summary = entry.get("summary").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let summary = entry
+                .get("summary")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let first_prompt = entry.get("firstPrompt").and_then(|v| v.as_str()).map(|s| {
                 let trimmed = s.trim();
                 if trimmed.len() > 120 {
@@ -239,11 +245,158 @@ pub enum StatusHint {
     ToolRunning,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ParsedStatusHint {
     pub status_hint: StatusHint,
     pub looks_like_waiting: bool,
     pub last_action: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+enum RecentSignal {
+    UserPrompt,
+    AssistantText(String),
+    AssistantTool(String),
+    ToolResult,
+}
+
+fn tool_action_label(tool: &str) -> String {
+    match tool {
+        "Read" => "Reading files".to_string(),
+        "Edit" | "Write" => "Writing code".to_string(),
+        "Bash" => "Running command".to_string(),
+        "Grep" | "Glob" => "Searching".to_string(),
+        "Agent" => "Running subagent".to_string(),
+        "AskUserQuestion" => "Asking question".to_string(),
+        other => format!("Using {}", other),
+    }
+}
+
+fn text_looks_like_waiting(text: &str) -> bool {
+    text.ends_with('?')
+        || text.contains("Would you like")
+        || text.contains("Should I")
+        || text.contains("Do you want")
+        || text.contains("Let me know")
+        || text.contains("What would you prefer")
+}
+
+fn signal_from_typed_entry(line: &str) -> Option<RecentSignal> {
+    use claude_code_transcripts::types::{
+        AssistantContentBlock, Entry, UserContent, UserContentBlock,
+    };
+
+    let entry: Entry = serde_json::from_str(line).ok()?;
+    match entry {
+        Entry::Assistant(entry) => {
+            let mut signal = None;
+            for block in entry.message.content {
+                match block {
+                    AssistantContentBlock::Text { text } => {
+                        if !text.trim().is_empty() {
+                            signal = Some(RecentSignal::AssistantText(text));
+                        }
+                    }
+                    AssistantContentBlock::ToolUse { name, .. } => {
+                        signal = Some(RecentSignal::AssistantTool(name));
+                    }
+                    _ => {}
+                }
+            }
+            signal
+        }
+        Entry::User(entry) => match entry.message.content {
+            UserContent::Text(text) => {
+                if text.trim().is_empty() {
+                    None
+                } else {
+                    Some(RecentSignal::UserPrompt)
+                }
+            }
+            UserContent::Blocks(blocks) => {
+                let has_user_content = blocks.iter().any(|block| {
+                    matches!(
+                        block,
+                        UserContentBlock::Text { text } if !text.trim().is_empty()
+                    )
+                });
+                if has_user_content {
+                    Some(RecentSignal::UserPrompt)
+                } else if blocks
+                    .iter()
+                    .any(|block| matches!(block, UserContentBlock::ToolResult { .. }))
+                {
+                    Some(RecentSignal::ToolResult)
+                } else {
+                    None
+                }
+            }
+            UserContent::Other(_) => None,
+        },
+        _ => None,
+    }
+}
+
+fn signal_from_value_entry(val: &serde_json::Value) -> Option<RecentSignal> {
+    let msg_type = val.get("type").and_then(|v| v.as_str());
+    match msg_type {
+        Some("user") => {
+            let content = val.get("message").and_then(|m| m.get("content"));
+            if let Some(text) = content.and_then(|c| c.as_str()) {
+                return (!text.trim().is_empty()).then_some(RecentSignal::UserPrompt);
+            }
+            let Some(blocks) = content.and_then(|c| c.as_array()) else {
+                return None;
+            };
+            let has_user_content = blocks.iter().any(|item| {
+                item.get("type").and_then(|t| t.as_str()) == Some("text")
+                    && item
+                        .get("text")
+                        .and_then(|t| t.as_str())
+                        .is_some_and(|text| !text.trim().is_empty())
+            });
+            if has_user_content {
+                Some(RecentSignal::UserPrompt)
+            } else if blocks
+                .iter()
+                .any(|item| item.get("type").and_then(|t| t.as_str()) == Some("tool_result"))
+            {
+                Some(RecentSignal::ToolResult)
+            } else {
+                None
+            }
+        }
+        Some("assistant") => {
+            let content = val.get("message").and_then(|m| m.get("content"));
+            if let Some(text) = content.and_then(|c| c.as_str()) {
+                return (!text.trim().is_empty())
+                    .then(|| RecentSignal::AssistantText(text.to_string()));
+            }
+            let Some(blocks) = content.and_then(|c| c.as_array()) else {
+                return None;
+            };
+            let mut signal = None;
+            for item in blocks {
+                match item.get("type").and_then(|t| t.as_str()) {
+                    Some("tool_use") => {
+                        if let Some(name) = item.get("name").and_then(|n| n.as_str()) {
+                            signal = Some(RecentSignal::AssistantTool(name.to_string()));
+                        }
+                    }
+                    Some("text") => {
+                        if let Some(text) = item.get("text").and_then(|t| t.as_str()) {
+                            if !text.trim().is_empty() {
+                                signal = Some(RecentSignal::AssistantText(text.to_string()));
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            signal
+        }
+        _ => None,
+    }
 }
 
 /// Parse the last ~20 lines of a JSONL file to determine status hints.
@@ -265,12 +418,15 @@ pub fn parse_status_hint(path: &std::path::Path) -> ParsedStatusHint {
         reader.read_line(&mut skip).ok();
     }
 
-    let mut last_type: Option<&'static str> = None;
-    let mut last_assistant_content: Option<String> = None;
-    let mut last_tool: Option<String> = None;
+    let mut last_signal: Option<RecentSignal> = None;
 
     for line in reader.lines().map_while(Result::ok) {
         if line.is_empty() {
+            continue;
+        }
+
+        if let Some(signal) = signal_from_typed_entry(&line) {
+            last_signal = Some(signal);
             continue;
         }
 
@@ -279,62 +435,27 @@ pub fn parse_status_hint(path: &std::path::Path) -> ParsedStatusHint {
             Err(_) => continue,
         };
 
-        let msg_type = val.get("type").and_then(|v| v.as_str());
-
-        match msg_type {
-            Some("user") => {
-                last_type = Some("user");
-            }
-            Some("assistant") => {
-                last_type = Some("assistant");
-                // Extract content for waiting detection
-                if let Some(msg) = val.get("message") {
-                    if let Some(content) = msg.get("content") {
-                        if let Some(s) = content.as_str() {
-                            last_assistant_content = Some(s.to_string());
-                        } else if let Some(arr) = content.as_array() {
-                            // Check for tool use
-                            for item in arr {
-                                if item.get("type").and_then(|t| t.as_str()) == Some("tool_use") {
-                                    last_tool = item.get("name").and_then(|n| n.as_str()).map(|s| s.to_string());
-                                }
-                                if item.get("type").and_then(|t| t.as_str()) == Some("text") {
-                                    if let Some(text) = item.get("text").and_then(|t| t.as_str()) {
-                                        last_assistant_content = Some(text.to_string());
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            _ => {}
+        if let Some(signal) = signal_from_value_entry(&val) {
+            last_signal = Some(signal);
         }
     }
 
-    let status_hint = match last_type {
-        Some("user") => StatusHint::UserPrompted,
-        Some("assistant") if last_tool.is_some() => StatusHint::ToolRunning,
+    let status_hint = match last_signal {
+        Some(RecentSignal::UserPrompt) => StatusHint::UserPrompted,
+        Some(RecentSignal::AssistantTool(_)) => StatusHint::ToolRunning,
         _ => StatusHint::ClaudeResponded,
     };
 
-    let looks_like_waiting = last_assistant_content.as_ref().is_some_and(|c| {
-        c.ends_with('?')
-            || c.contains("Would you like")
-            || c.contains("Should I")
-            || c.contains("Do you want")
-            || c.contains("Let me know")
-            || c.contains("What would you prefer")
-    });
+    let looks_like_waiting = match &last_signal {
+        Some(RecentSignal::AssistantText(text)) => text_looks_like_waiting(text),
+        Some(RecentSignal::AssistantTool(tool)) if tool == "AskUserQuestion" => true,
+        _ => false,
+    };
 
-    let last_action = last_tool.map(|tool| match tool.as_str() {
-        "Read" => "Reading files".to_string(),
-        "Edit" | "Write" => "Writing code".to_string(),
-        "Bash" => "Running command".to_string(),
-        "Grep" | "Glob" => "Searching".to_string(),
-        "Agent" => "Running subagent".to_string(),
-        other => format!("Using {}", other),
-    });
+    let last_action = match last_signal {
+        Some(RecentSignal::AssistantTool(tool)) => Some(tool_action_label(&tool)),
+        _ => None,
+    };
 
     ParsedStatusHint {
         status_hint,
@@ -356,12 +477,26 @@ pub fn parse_session_stats(path: &std::path::Path) -> CachedStats {
 
     // Skip very large files to prevent memory pressure
     if meta.as_ref().is_some_and(|m| m.len() > 100 * 1024 * 1024) {
-        return CachedStats { mtime, model: None, total_tokens: 0, cost_usd: None, context_tokens: None };
+        return CachedStats {
+            mtime,
+            model: None,
+            total_tokens: 0,
+            cost_usd: None,
+            context_tokens: None,
+        };
     }
 
     let file = match std::fs::File::open(path) {
         Ok(f) => f,
-        Err(_) => return CachedStats { mtime, model: None, total_tokens: 0, cost_usd: None, context_tokens: None },
+        Err(_) => {
+            return CachedStats {
+                mtime,
+                model: None,
+                total_tokens: 0,
+                cost_usd: None,
+                context_tokens: None,
+            }
+        }
     };
 
     let reader = BufReader::new(file);
@@ -403,10 +538,22 @@ pub fn parse_session_stats(path: &std::path::Path) -> CachedStats {
         // Accumulate token counts; track last message's full context size
         // (input + cache reads + cache creation — matches Claude's own context-window display)
         if let Some(usage) = msg.get("usage") {
-            let input = usage.get("input_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
-            let output = usage.get("output_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
-            let cache_read = usage.get("cache_read_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
-            let cache_create = usage.get("cache_creation_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
+            let input = usage
+                .get("input_tokens")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0);
+            let output = usage
+                .get("output_tokens")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0);
+            let cache_read = usage
+                .get("cache_read_input_tokens")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0);
+            let cache_create = usage
+                .get("cache_creation_input_tokens")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0);
             total_tokens = total_tokens.saturating_add(input + output);
             let ctx = input + cache_read + cache_create;
             if ctx > 0 {
@@ -420,7 +567,13 @@ pub fn parse_session_stats(path: &std::path::Path) -> CachedStats {
         }
     }
 
-    CachedStats { mtime, model, total_tokens, cost_usd, context_tokens }
+    CachedStats {
+        mtime,
+        model,
+        total_tokens,
+        cost_usd,
+        context_tokens,
+    }
 }
 
 /// Check if a string is unsuitable as a session title.
@@ -463,7 +616,10 @@ pub fn is_bad_title(s: &str) -> bool {
 /// Check if a string looks like a bare file path rather than a real title.
 fn looks_like_path(s: &str) -> bool {
     // Windows absolute path: C:\... or D:\...
-    if s.len() >= 3 && s.as_bytes()[1] == b':' && (s.as_bytes()[2] == b'\\' || s.as_bytes()[2] == b'/') {
+    if s.len() >= 3
+        && s.as_bytes()[1] == b':'
+        && (s.as_bytes()[2] == b'\\' || s.as_bytes()[2] == b'/')
+    {
         return true;
     }
     // Unix absolute path with multiple segments
@@ -524,17 +680,19 @@ mod tests {
 
     #[test]
     fn test_is_bad_title_filters_xml_tags() {
-        assert!(is_bad_title("<local-command-caveat>Caveat: The messages..."));
+        assert!(is_bad_title(
+            "<local-command-caveat>Caveat: The messages..."
+        ));
         assert!(is_bad_title("<system>Some system text</system>"));
         assert!(is_bad_title("<user-prompt>test</user-prompt>"));
     }
 
     #[test]
     fn test_is_bad_title_filters_short_and_commands() {
-        assert!(is_bad_title("hi"));  // too short
-        assert!(is_bad_title("/help"));  // slash command
-        assert!(is_bad_title("git status"));  // git command
-        assert!(is_bad_title("Caveat: something"));  // system prefix
+        assert!(is_bad_title("hi")); // too short
+        assert!(is_bad_title("/help")); // slash command
+        assert!(is_bad_title("git status")); // git command
+        assert!(is_bad_title("Caveat: something")); // system prefix
     }
 
     #[test]
@@ -550,7 +708,10 @@ mod tests {
 {"type":"user","message":{"content":"implement the authentication feature"}}"#;
         let f = write_temp_jsonl(content);
         let title = parse_title_from_jsonl(f.path());
-        assert_eq!(title, Some("implement the authentication feature".to_string()));
+        assert_eq!(
+            title,
+            Some("implement the authentication feature".to_string())
+        );
     }
 
     #[test]
@@ -583,10 +744,50 @@ mod tests {
 
     #[test]
     fn test_parse_last_action_from_tool() {
-        let content = r#"{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read"}]}}"#;
+        let content =
+            r#"{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read"}]}}"#;
         let f = write_temp_jsonl(content);
         let hint = parse_status_hint(f.path());
         assert_eq!(hint.last_action, Some("Reading files".to_string()));
+    }
+
+    #[test]
+    fn test_typed_parser_reads_valid_assistant_tool_entry() {
+        let line = r#"{"type":"assistant","uuid":"a1","parentUuid":null,"isSidechain":false,"sessionId":"s1","timestamp":"2026-01-01T00:00:00Z","message":{"id":"msg_1","type":"message","role":"assistant","model":"claude-sonnet-4-6","content":[{"type":"tool_use","id":"toolu_1","name":"Read","input":{"file_path":"src/main.rs"}}],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":10,"output_tokens":5}}}"#;
+        assert_eq!(
+            signal_from_typed_entry(line),
+            Some(RecentSignal::AssistantTool("Read".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_parse_status_hint_does_not_treat_tool_result_as_user_prompt() {
+        let content = r#"{"type":"assistant","message":{"content":[{"type":"tool_use","id":"toolu_1","name":"Bash","input":{"command":"npm test"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"toolu_1","content":"ok"}]}}"#;
+        let f = write_temp_jsonl(content);
+        let hint = parse_status_hint(f.path());
+        assert_eq!(hint.status_hint, StatusHint::ClaudeResponded);
+        assert_eq!(hint.last_action, None);
+    }
+
+    #[test]
+    fn test_parse_status_hint_clears_stale_tool_after_assistant_text() {
+        let content = r#"{"type":"assistant","message":{"content":[{"type":"tool_use","id":"toolu_1","name":"Read","input":{"file_path":"src/main.rs"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"toolu_1","content":"file contents"}]}}
+{"type":"assistant","message":{"content":[{"type":"text","text":"I found the issue."}]}}"#;
+        let f = write_temp_jsonl(content);
+        let hint = parse_status_hint(f.path());
+        assert_eq!(hint.status_hint, StatusHint::ClaudeResponded);
+        assert_eq!(hint.last_action, None);
+    }
+
+    #[test]
+    fn test_parse_status_hint_detects_ask_user_question_as_waiting() {
+        let content = r#"{"type":"assistant","message":{"content":[{"type":"tool_use","id":"toolu_1","name":"AskUserQuestion","input":{"questions":[{"question":"Which option should I use?"}]}}]}}"#;
+        let f = write_temp_jsonl(content);
+        let hint = parse_status_hint(f.path());
+        assert!(hint.looks_like_waiting);
+        assert_eq!(hint.last_action, Some("Asking question".to_string()));
     }
 
     #[test]
